@@ -34,4 +34,71 @@ $('patientForm').onsubmit=e=>{e.preventDefault();let selected=[...$('patientTest
 function render(){$('nPatients').textContent=patients.length;$('nBills').textContent=bills.length;$('nLeads').textContent=leads.length;$('patientRows').innerHTML=patients.length?patients.map(p=>`<tr><td>${p.id}</td><td>${esc(p.name)}</td><td>${esc(p.mobile)}</td><td>${esc(p.tests)}</td><td>${esc(p.date)}</td></tr>`).join(''):'<tr><td colspan="5">कोई रिकॉर्ड नहीं।</td></tr>';$('billPatient').innerHTML=patients.map(p=>`<option value="${p.id}">${p.id} — ${esc(p.name)}</option>`).join('');$('billRows').innerHTML=bills.length?bills.map(b=>`<tr><td>${b.id}</td><td>${esc(b.patient)}</td><td>₹${b.amount}</td><td>${b.status}</td></tr>`).join(''):'<tr><td colspan="4">अभी बिल नहीं।</td></tr>';$('leadRows').innerHTML=leads.length?leads.map(l=>`<tr><td>${esc(l.time)}</td><td>${esc(l.name)}</td><td>${esc(l.mobile)}</td><td>${esc(l.place)}</td><td><span class="pill">New</span></td></tr>`).join(''):'<tr><td colspan="5">अभी Lead नहीं।</td></tr>'}
 $('makeBill').onclick=()=>{let p=patients.find(x=>x.id===$('billPatient').value);if(!p){alert('पहले मरीज रजिस्टर करें।');return}let amount=Number($('billAmount').value);if(!Number.isFinite(amount)||amount<0){alert('सही राशि भरें।');return}bills.push({id:'B'+String(bills.length+1).padStart(5,'0'),patient:p.name,amount,status:$('billStatus').value});$('billMsg').innerHTML='<div class="success">डेमो बिल बनाया गया।</div>';render()};
 $('leadForm').onsubmit=e=>{e.preventDefault();leads.unshift({time:new Date().toLocaleString('hi-IN'),name:$('lName').value,mobile:$('lMobile').value,place:$('lCity').value+', '+$('lState').value});$('leadMsg').innerHTML='<div class="success">डेमो enquiry दर्ज हुई। वास्तविक WhatsApp संदेश अभी नहीं भेजा गया है; इसके लिए सर्वर/API कनेक्शन जरूरी है।</div>';e.target.reset();render()};
-</script></body></html>
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<div id="password-reset-box" style="display:none;max-width:420px;margin:30px auto;padding:25px;border:1px solid #ddd;border-radius:12px;font-family:Arial;background:white;color:#222">
+  <h2>PATHOLOGY 100 ONLY</h2>
+  <h3>नया Password बनाएँ</h3>
+  <form id="reset-form">
+    <label>नया Password</label>
+    <input id="new-password" type="password" minlength="8" required style="display:block;width:100%;padding:12px;margin:10px 0">
+    <label>Confirm Password</label>
+    <input id="confirm-password" type="password" minlength="8" required style="display:block;width:100%;padding:12px;margin:10px 0">
+    <button type="submit" style="padding:12px 20px;background:#087f5b;color:white;border:0;border-radius:8px">Save Password</button>
+  </form>
+  <p id="reset-message"></p>
+</div>
+
+<script>
+const SUPABASE_URL = "https://qixlreovljbageufgzvc.supabase.co";
+const SUPABASE_KEY = "sb_publishable_8-aSOKszXeh9GdybSR0j7w_cjSL4KFJ";
+
+const client = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+const box = document.getElementById("password-reset-box");
+const message = document.getElementById("reset-message");
+
+client.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY" && session) {
+    box.style.display = "block";
+  }
+});
+
+client.auth.getSession().then(({data, error}) => {
+  if (!error && data.session &&
+      location.hash.includes("type=recovery")) {
+    box.style.display = "block";
+  }
+});
+
+document.getElementById("reset-form").addEventListener("submit",
+async function(e) {
+  e.preventDefault();
+
+  const password = document.getElementById("new-password").value;
+  const confirm = document.getElementById("confirm-password").value;
+
+  if (password !== confirm) {
+    message.textContent = "दोनों Password एक जैसे होने चाहिए।";
+    return;
+  }
+
+  const {error} = await client.auth.updateUser({
+    password: password
+  });
+
+  if (error) {
+    message.textContent = error.message;
+  } else {
+    message.textContent = "Password सफलतापूर्वक बदल गया।";
+  }
+});
+</script>
+
+</body>
+</html>
