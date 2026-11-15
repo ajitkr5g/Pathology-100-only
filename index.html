@@ -25,7 +25,10 @@
 <div class="card"><h2>लैब डैशबोर्ड</h2><div class="grid"><div class="stat"><b id="nPatients">0</b>डेमो मरीज</div><div class="stat"><b id="nBills">0</b>डेमो बिल</div><div class="stat"><b id="nLeads">0</b>नई Leads</div><div class="stat"><b>₹100</b>प्रति लैब / महीना</div></div><h3>आज का काम</h3><p class="muted">Patient Registration → जाँच चुनें → बिल बनाएं → अधिकृत लैब स्टाफ द्वारा परिणाम सत्यापित करें → रिपोर्ट जारी करें।</p></div>
 </section>
 <section id="lab" class="page hidden"><div class="card"><h2>लैब प्रोफाइल</h2><form id="labForm"><div class="grid"><div class="field"><label>लैब का नाम</label><input id="labName" placeholder="आपकी लैब का नाम"></div><div class="field"><label>मोबाइल</label><input id="labPhone" placeholder="लैब मोबाइल"></div><div class="field"><label>शहर</label><input id="labCity" placeholder="शहर"></div><div class="field"><label>राज्य</label><input id="labState" placeholder="राज्य"></div><div class="field"><label>पूरा पता</label><input id="labAddress" placeholder="पता"></div></div><button class="btn">डेमो प्रोफाइल सेव करें</button></form><div id="labMsg"></div></div></section>
-<section id="patient" class="page hidden"><div class="card"><h2>मरीज रजिस्ट्रेशन</h2><form id="patientForm"><div class="grid">
+<section id="patient" class="page hidden"><div class="card"><h2>मरीज रजिस्ट्रेशन</h2><h3>पुराना मरीज खोजें</h3>
+<input id="existingPatientSearch" placeholder="मोबाइल या Patient ID डालें">
+<button type="button" class="btn" id="searchExistingPatient">मरीज खोजें</button>
+<div id="existingPatientResult"></div><form id="patientForm"><div class="grid">
 <div class="field"><label>मरीज का नाम *</label><input id="pName" required></div><div class="field"><label>उम्र</label><input id="pAge" type="number" min="0" max="120"></div><div class="field"><label>लिंग</label><select id="pGender"><option>चुनें</option><option>पुरुष</option><option>महिला</option><option>अन्य</option></select></div><div class="field"><label>मोबाइल</label><input id="pMobile" inputmode="tel"></div><div class="field"><label>डॉक्टर का नाम</label><input id="pDoctor"></div><div class="field"><label>सैंपल तारीख</label><input id="pDate" type="date"></div></div><h3>जाँच चुनें</h3><div class="checks" id="patientTests"></div><div class="field" style="margin-top:12px"><label>नोट (वैकल्पिक)</label><textarea id="pNote" rows="2"></textarea></div><button class="btn">Patient ID बनाएं और सेव करें</button></form><div id="patientMsg"></div></div></section>
 <section id="billing" class="page hidden"><div class="card"><h2>डेमो बिलिंग</h2><p class="muted">बिल केवल चयनित डेमो रिकॉर्ड के लिए। कीमतें लैब स्वयं तय करेगी; यहाँ कोई वास्तविक भुगतान नहीं होता।</p><div class="field"><label>Patient ID</label><select id="billPatient"></select></div><div class="field"><label>कुल राशि (₹)</label><input id="billAmount" type="number" min="0" placeholder="उदाहरण: 500"></div><div class="field"><label>भुगतान स्थिति</label><select id="billStatus"><option>Unpaid</option><option>Paid</option><option>Partial</option></select></div><button class="btn" id="makeBill">डेमो बिल बनाएं</button><div id="billMsg"></div></div><div class="card"><h2>बिल रिकॉर्ड</h2><div class="scroll"><table><thead><tr><th>Bill ID</th><th>Patient</th><th>राशि</th><th>स्थिति</th></tr></thead><tbody id="billRows"><tr><td colspan="4">अभी बिल नहीं।</td></tr></tbody></table></div></div></section>
 <section id="catalog" class="page hidden"><div class="card"><h2>सामान्य जाँच सूची</h2><p class="muted">लैब अपनी उपलब्ध मशीन/मान्य विधि के अनुसार टेस्ट उपलब्ध कराए। यह सूची केवल कैटलॉग है, सभी लैब में हर जाँच उपलब्ध होना जरूरी नहीं।</p><div class="checks" id="catalogList"></div></div></section>
@@ -155,7 +158,103 @@ $('patientForm').onsubmit = async function(e) {
 function render(){$('nPatients').textContent=patients.length;$('nBills').textContent=bills.length;$('nLeads').textContent=leads.length;$('patientRows').innerHTML=patients.length?patients.map(p=>`<tr><td>${p.id}</td><td>${esc(p.name)}</td><td>${esc(p.mobile)}</td><td>${esc(p.tests)}</td><td>${esc(p.date)}</td></tr>`).join(''):'<tr><td colspan="5">कोई रिकॉर्ड नहीं।</td></tr>';$('billPatient').innerHTML=patients.map(p=>`<option value="${p.id}">${p.id} — ${esc(p.name)}</option>`).join('');$('billRows').innerHTML=bills.length?bills.map(b=>`<tr><td>${b.id}</td><td>${esc(b.patient)}</td><td>₹${b.amount}</td><td>${b.status}</td></tr>`).join(''):'<tr><td colspan="4">अभी बिल नहीं।</td></tr>';$('leadRows').innerHTML=leads.length?leads.map(l=>`<tr><td>${esc(l.time)}</td><td>${esc(l.name)}</td><td>${esc(l.mobile)}</td><td>${esc(l.place)}</td><td><span class="pill">New</span></td></tr>`).join(''):'<tr><td colspan="5">अभी Lead नहीं।</td></tr>'}
 $('makeBill').onclick=()=>{let p=patients.find(x=>x.id===$('billPatient').value);if(!p){alert('पहले मरीज रजिस्टर करें।');return}let amount=Number($('billAmount').value);if(!Number.isFinite(amount)||amount<0){alert('सही राशि भरें।');return}bills.push({id:'B'+String(bills.length+1).padStart(5,'0'),patient:p.name,amount,status:$('billStatus').value});$('billMsg').innerHTML='<div class="success">डेमो बिल बनाया गया।</div>';render()};
 $('leadForm').onsubmit=e=>{e.preventDefault();leads.unshift({time:new Date().toLocaleString('hi-IN'),name:$('lName').value,mobile:$('lMobile').value,place:$('lCity').value+', '+$('lState').value});$('leadMsg').innerHTML='<div class="success">डेमो enquiry दर्ज हुई। वास्तविक WhatsApp संदेश अभी नहीं भेजा गया है; इसके लिए सर्वर/API कनेक्शन जरूरी है।</div>';e.target.reset();render()};
-</script>
+
+$('searchExistingPatient').onclick = async function() {
+  const result = $('existingPatientResult');
+  const search = $('existingPatientSearch').value.trim();
+  const labId = window.currentLabId;
+
+  if (!labId) {
+    result.textContent = "पहले Login करें।";
+    return;
+  }
+
+  if (!search) {
+    result.textContent = "मोबाइल या Patient ID डालें।";
+    return;
+  }
+
+  result.textContent = "मरीज खोज रहे हैं...";
+
+  try {
+    let query = client
+      .from("patients")
+      .select("id, patient_code, patient_name, phone")
+      .eq("lab_id", labId);
+
+    if (search.toUpperCase().startsWith("P")) {
+      query = query.eq("patient_code", search);
+    } else {
+      query = query.eq("phone", search);
+    }
+
+    const { data: patient, error } = await query.maybeSingle();
+
+    if (error) throw error;
+
+    if (!patient) {
+      result.textContent = "इस जानकारी से मरीज नहीं मिला।";
+      return;
+    }
+
+    result.innerHTML =
+      '<div class="success">मरीज मिला: <b>' +
+      esc(patient.patient_name) +
+      '</b><br>Patient ID: ' +
+      esc(patient.patient_code) +
+      '<br>मोबाइल: ' + esc(patient.phone || "-") +
+      '<br><button type="button" class="btn" id="existingPatientOrder">इस मरीज का नया जाँच ऑर्डर बनाएँ</button></div>';
+
+    $('existingPatientOrder').onclick = async function() {
+      const selected = [
+        ...$('patientTests').querySelectorAll('input:checked')
+      ].map(x => x.value);
+
+      if (!selected.length) {
+        alert("पहले कम से कम एक जाँच चुनें।");
+        return;
+      }
+
+      try {
+        const { data: order, error: orderError } = await client
+          .from("test_orders")
+          .insert({
+            lab_id: labId,
+            patient_id: patient.id,
+            order_code: "O" + Date.now(),
+            status: "registered"
+          })
+          .select("id")
+          .single();
+
+        if (orderError) throw orderError;
+
+        const items = selected.map(name => ({
+          lab_id: labId,
+          test_order_id: order.id,
+          test_name: name,
+          price_paise: 0
+        }));
+
+        const { error: itemsError } = await client
+          .from("test_order_items")
+          .insert(items);
+
+        if (itemsError) throw itemsError;
+
+        result.innerHTML =
+          '<div class="success">पुराने मरीज का नया जाँच ऑर्डर सफलतापूर्वक सेव हुआ।</div>';
+
+      } catch (err) {
+        result.innerHTML =
+          '<div class="danger">त्रुटि: ' + esc(err.message) + '</div>';
+      }
+    };
+
+  } catch (err) {
+    result.textContent = "खोजने में त्रुटि: " + err.message;
+  }
+};</script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
