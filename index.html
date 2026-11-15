@@ -651,14 +651,61 @@ label.innerHTML=
 esc(t.test_name)+' — ₹'+price;
 
 $("patientTests").append(label);
-
+if(window.currentLabRole==="lab_admin"){
+  const editBtn=document.createElement("button");
+  editBtn.type="button";
+  editBtn.textContent="कीमत सेट करें";
+  editBtn.style.marginLeft="10px";
+  editBtn.onclick=(event)=>{
+    event.preventDefault();
+    event.stopPropagation();
+    saveTestPrice(t.id);
+  };
+  label.appendChild(editBtn);
+}
 const item=document.createElement("label");
 item.textContent=t.test_name+" — ₹"+price;
 $("catalogList").append(item);
 
 });
 }
+async function saveTestPrice(testId){
+  if(window.currentLabRole!=="lab_admin"){
+    alert("केवल Lab Owner कीमत बदल सकता है");
+    return;
+  }
 
+  const test=tests.find(t=>t.id===testId);
+  if(!test)return;
+
+  const value=prompt(
+    "नई कीमत रुपये में डालें:",
+    (Number(test.price_paise)/100).toFixed(2)
+  );
+
+  if(value===null)return;
+
+  const rupees=Number(value);
+
+  if(!Number.isFinite(rupees)||rupees<0){
+    alert("सही कीमत डालें");
+    return;
+  }
+
+  const {error}=await client
+    .from("lab_tests")
+    .update({price_paise:Math.round(rupees*100)})
+    .eq("id",testId)
+    .eq("lab_id",window.currentLabId);
+
+  if(error){
+    alert("कीमत सेव नहीं हुई: "+error.message);
+    return;
+  }
+
+  alert("नई कीमत सफलतापूर्वक सेव हो गई");
+  await loadTests();
+}
 /* LOAD ALL DATA */
 
 async function loadData(){
