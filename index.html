@@ -95,7 +95,7 @@ $('patientForm').onsubmit = async function(e) {
           lab_id: labId,
           patient_id: patient.id,
           order_code: orderCode,
-          status: "pending"
+          status: "registered"
         })
         .select("id")
         .single();
