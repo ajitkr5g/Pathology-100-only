@@ -595,28 +595,89 @@ msg.textContent="Login Error: "+err.message;
 
 /* LOAD MEMBERSHIP AND APP */
 
+/* LOAD MEMBERSHIP AND APP - MASTER + LAB LOGIN */
+
 async function initializeApp(){
 
-const {data:{user},error:userError}=await client.auth.getUser();
+  const {data:{user},error:userError}=await client.auth.getUser();
 
-if(userError || !user) throw new Error("User नहीं मिला");
+  if(userError || !user){
+    throw new Error("User नहीं मिला");
+  }
 
-const {data:membership,error:memberError}=await client
-.from("lab_memberships")
-.select("lab_id,role")
-.eq("user_id",user.id)
-.maybeSingle();
+  // पहले Master Admin की पहचान
+  const {data:isAdmin,error:adminError}=await client
+    .rpc("is_platform_admin");
 
-if(memberError) throw memberError;
+  if(adminError) throw adminError;
 
-if(!membership) throw new Error("Lab Membership नहीं मिली");
+  if(isAdmin === true){
 
-window.currentLabId=membership.lab_id;
-window.currentLabRole=membership.role;
+    window.currentLabId=null;
+    window.currentLabRole="platform_admin";
 
-await loadTests();
-showApp();
-await loadData();
+    // Master को केवल Admin और Lead Enquiry दिखाएँ
+    document.querySelectorAll(".tab").forEach(btn=>{
+      btn.style.display =
+        ["dash","leads","admin"].includes(btn.dataset.p)
+        ? ""
+        : "none";
+    });
+
+    showApp();
+
+    document.querySelectorAll(".tab").forEach(x=>{
+      x.classList.remove("active");
+    });
+
+    document.querySelectorAll(".page").forEach(x=>{
+      x.classList.add("hidden");
+    });
+
+    document.querySelector('[data-p="admin"]').classList.add("active");
+    $("admin").classList.remove("hidden");
+
+    return;
+  }
+
+  // सामान्य Lab Login
+  const {data:membership,error:memberError}=await client
+    .from("lab_memberships")
+    .select("lab_id,role")
+    .eq("user_id",user.id)
+    .maybeSingle();
+
+  if(memberError) throw memberError;
+
+  if(!membership){
+    throw new Error("Lab Membership नहीं मिली");
+  }
+
+  window.currentLabId=membership.lab_id;
+  window.currentLabRole=membership.role;
+
+  // Lab को Lead Enquiry और Super Admin नहीं दिखाएँ
+  document.querySelectorAll(".tab").forEach(btn=>{
+    btn.style.display =
+      ["leads","admin"].includes(btn.dataset.p)
+      ? "none"
+      : "";
+  });
+
+  document.querySelectorAll(".tab").forEach(x=>{
+    x.classList.remove("active");
+  });
+
+  document.querySelectorAll(".page").forEach(x=>{
+    x.classList.add("hidden");
+  });
+
+  document.querySelector('[data-p="dash"]').classList.add("active");
+  $("dash").classList.remove("hidden");
+
+  await loadTests();
+  showApp();
+  await loadData();
 }
 
 /* LOAD TESTS */
