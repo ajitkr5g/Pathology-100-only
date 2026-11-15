@@ -773,6 +773,121 @@ status:b.payment_status
 
 }
 
+function printBill(billId){
+  const bill=bills.find(b=>b.id===billId);
+
+  if(!bill){
+    alert("बिल नहीं मिला");
+    return;
+  }
+
+  const w=window.open("","_blank");
+
+  if(!w){
+    alert("Print popup allow करें");
+    return;
+  }
+
+  const today=new Date().toLocaleString("en-IN");
+
+  w.document.write(`
+    <!DOCTYPE html>
+    <html lang="hi">
+    <head>
+      <meta charset="UTF-8">
+      <title>Pathology Payment Receipt</title>
+      <style>
+        body{
+          font-family:Arial,sans-serif;
+          padding:25px;
+          color:#183129;
+        }
+        .header{
+          text-align:center;
+          border-bottom:2px solid #087f5b;
+          padding-bottom:12px;
+        }
+        h2{margin:5px}
+        .info{margin:20px 0;line-height:1.8}
+        table{
+          width:100%;
+          border-collapse:collapse;
+          margin-top:15px;
+        }
+        td,th{
+          border:1px solid #ccc;
+          padding:12px;
+          text-align:left;
+        }
+        .total{
+          font-weight:bold;
+          background:#e8f5ee;
+        }
+        .footer{
+          text-align:center;
+          margin-top:35px;
+        }
+        @media print{
+          button{display:none}
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h2>PATHOLOGY 100 ONLY</h2>
+        <h3>Payment Receipt</h3>
+      </div>
+
+      <div class="info">
+        <b>Bill No:</b> ${esc(bill.id)}<br>
+        <b>Patient Name:</b> ${esc(bill.patient)}<br>
+        <b>Date:</b> ${esc(today)}
+      </div>
+
+      <table>
+        <tr>
+          <td>Test Subtotal</td>
+          <td>₹${money(bill.subtotal)}</td>
+        </tr>
+        <tr>
+          <td>Discount</td>
+          <td>₹${money(bill.discount)}</td>
+        </tr>
+        <tr class="total">
+          <td>Total Bill</td>
+          <td>₹${money(bill.amount)}</td>
+        </tr>
+        <tr>
+          <td>Amount Paid</td>
+          <td>₹${money(bill.paid)}</td>
+        </tr>
+        <tr>
+          <td>Balance Due</td>
+          <td>₹${money(bill.due)}</td>
+        </tr>
+        <tr>
+          <td>Payment Status</td>
+          <td>${esc(bill.status)}</td>
+        </tr>
+      </table>
+
+      <div class="footer">
+        <p>Thank you for visiting!</p>
+        <p>PATHOLOGY 100 ONLY</p>
+      </div>
+
+      <script>
+        window.onload=function(){
+          window.print();
+        };
+      <\/script>
+    </body>
+    </html>
+  `);
+
+  w.document.close();
+}
+
 /* RENDER */
 
 function render(){
@@ -801,7 +916,10 @@ $("billRows").innerHTML=bills.length
 <td>₹${money(b.amount)}</td>
 <td>₹${money(b.paid)}</td>
 <td>₹${money(b.due)}</td>
-<td>${esc(b.status)}</td>
+<td>${esc(b.status)}
+<button type="button" class="plain"
+onclick="printBill('${esc(b.id)}')">Print</button>
+</td>
 </tr>`).join("")
 :'<tr><td colspan="6">अभी बिल नहीं।</td></tr>';
 
