@@ -3,7 +3,18 @@
 <style>
 :root{--g:#087f5b;--dark:#075c45;--bg:#f2f7f4;--line:#d9e6df;--ink:#183129;--muted:#64756d;--red:#a33b32}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px system-ui,-apple-system,Segoe UI,sans-serif}header{background:var(--dark);color:white;padding:15px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.logo{font-size:20px;font-weight:850}.logo small{display:block;font-size:11px;font-weight:500;opacity:.85}main{max-width:1180px;margin:18px auto;padding:0 13px}.notice{background:#fff5d9;border:1px solid #edd99a;color:#6b510b;padding:12px;border-radius:12px;margin-bottom:14px}.nav{display:flex;gap:7px;overflow:auto;padding-bottom:8px;margin-bottom:10px}.tab{white-space:nowrap;border:1px solid var(--line);background:white;color:var(--ink);padding:10px 13px;border-radius:10px}.tab.active,.btn{background:var(--g);color:white;border-color:var(--g)}.page.hidden{display:none}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 3px 12px #193d2c08}h2{font-size:19px;margin:0 0 13px}h3{font-size:15px;margin:16px 0 8px}.muted{color:var(--muted);font-size:13px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:11px}.stat{padding:14px;border:1px solid var(--line);border-radius:12px;background:#f7fbf8}.stat b{display:block;color:var(--g);font-size:25px}.field{margin-bottom:11px}label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}input,select,textarea{width:100%;padding:10px;border:1px solid #cbd9d1;border-radius:9px;background:#fff;color:var(--ink);font:inherit}button{cursor:pointer;font:inherit}.btn,.plain{border-radius:9px;padding:10px 14px;border:1px solid var(--line)}.plain{background:#fff;color:var(--ink)}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.pill{background:#e3f3eb;color:#075c45;border-radius:20px;padding:4px 9px;font-size:12px}.danger{color:var(--red)}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;border-bottom:1px solid var(--line);padding:9px}th{color:var(--muted)}.scroll{overflow:auto}.hidden{display:none!important}.success{background:#e9f7ef;border:1px solid #c7e8d3;padding:10px;border-radius:9px;margin-top:10px}.print{background:#fff;padding:18px}.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px}.checks label{display:flex;gap:8px;align-items:center;background:#f7faf8;padding:8px;border-radius:8px}.checks input{width:auto}footer{text-align:center;color:var(--muted);padding:20px;font-size:12px}@media(max-width:520px){header{align-items:flex-start}.card{padding:13px}table{font-size:12px}th,td{padding:7px}}
-</style></head><body>
+</style></head><body><div id="login-box" style="max-width:420px;margin:50px auto;padding:25px;background:white;border:1px solid #ddd;border-radius:15px">
+<h2>PATHOLOGY 100 ONLY</h2>
+<h3>Lab Login</h3>
+<form id="login-form">
+<label>Username</label>
+<input id="login-username" required placeholder="अपना Username" style="width:100%;padding:14px;margin:10px 0">
+<label>Password</label>
+<input id="login-password" type="password" required placeholder="अपना Password" style="width:100%;padding:14px;margin:10px 0">
+<button type="submit" style="padding:14px;background:#087f5b;color:white;border:0;border-radius:8px;width:100%">Login</button>
+</form>
+<p id="login-message"></p>
+</div>
 <header><div class="logo">⚕ PATHOLOGY 100 ONLY<small>ALL INDIA LAB MANAGEMENT · WORKING UI PROTOTYPE</small></div><span class="pill">₹100 / लैब / महीना (प्रस्तावित)</span></header>
 <main>
 <div class="notice"><b>महत्वपूर्ण:</b> यह ब्राउज़र में चलने वाला शुरुआती प्रोटोटाइप है। इसमें डेमो डेटा इसी डिवाइस/ब्राउज़र में रहता है। यह अभी इंटरनेट पर प्रकाशित, बहु-लैब सुरक्षित सर्वर, वास्तविक भुगतान या WhatsApp API से जुड़ा नहीं है। वास्तविक मरीजों का डेटा इसमें न डालें। मेडिकल रिपोर्ट अधिकृत लैब प्रोफेशनल की जाँच और हस्ताक्षर के बाद ही जारी होनी चाहिए।</div>
@@ -59,7 +70,46 @@ const client = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
+document.querySelector("header").style.display = "none";
+document.querySelector("main").style.display = "none";
+document.querySelector("footer").style.display = "none";
 
+document.getElementById("login-form").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const username = document.getElementById("login-username").value.trim();
+  const password = document.getElementById("login-password").value;
+  const msg = document.getElementById("login-message");
+
+  msg.textContent = "Login हो रहा है...";
+
+  try {
+    const { data, error } = await client.functions.invoke(
+      "username-login",
+      { body: { username, password } }
+    );
+
+    if (error || !data || !data.success) {
+      throw new Error(data?.error || error?.message || "Login असफल");
+    }
+
+    const { error: sessionError } = await client.auth.setSession({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token
+    });
+
+    if (sessionError) throw sessionError;
+
+    document.getElementById("login-box").style.display = "none";
+    document.querySelector("header").style.display = "";
+    document.querySelector("main").style.display = "";
+    document.querySelector("footer").style.display = "";
+
+    msg.textContent = "Login सफल!";
+  } catch (err) {
+    msg.textContent = "Login Error: " + err.message;
+  }
+});
 const box = document.getElementById("password-reset-box");
 const message = document.getElementById("reset-message");
 
