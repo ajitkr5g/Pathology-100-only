@@ -229,6 +229,20 @@ price_paise: testPrices[name] || 0
 };
 
 
+function render(){
+$('nPatients').textContent=patients.length;
+$('nBills').textContent=bills.length;
+$('nLeads').textContent=leads.length;
+
+$('patientRows').innerHTML=patients.length?patients.map(p=>`<tr><td>${p.id}</td><td>${esc(p.name)}</td><td>${esc(p.mobile)}</td><td>${esc(p.tests)}</td><td>${esc(p.date)}</td></tr>`).join(''):'<tr><td colspan="5">कोई रिकॉर्ड नहीं।</td></tr>';
+
+$('billPatient').innerHTML=patients.map(p=>`<option value="${p.id}">${p.id} — ${esc(p.name)}</option>`).join('');
+
+$('billRows').innerHTML=bills.length?bills.map(b=>`<tr><td>${b.id}</td><td>${esc(b.patient)}</td><td>₹${b.amount}</td><td>${b.status}</td></tr>`).join(''):'<tr><td colspan="4">अभी बिल नहीं।</td></tr>';
+
+$('leadRows').innerHTML=leads.length?leads.map(l=>`<tr><td>${esc(l.time)}</td><td>${esc(l.name)}</td><td>${esc(l.mobile)}</td><td>${esc(l.place)}</td><td><span class="pill">New</span></td></tr>`).join(''):'<tr><td colspan="5">अभी Lead नहीं।</td></tr>';
+}
+
 $('makeBill').onclick=()=>{let p=patients.find(x=>x.id===$('billPatient').value);if(!p){alert('पहले मरीज रजिस्टर करें।');return}let amount=Number($('billAmount').value);if(!Number.isFinite(amount)||amount<0){alert('सही राशि भरें।');return}bills.push({id:'B'+String(bills.length+1).padStart(5,'0'),patient:p.name,amount,status:$('billStatus').value});$('billMsg').innerHTML='<div class="success">डेमो बिल बनाया गया।</div>';render()};
 $('leadForm').onsubmit=e=>{e.preventDefault();leads.unshift({time:new Date().toLocaleString('hi-IN'),name:$('lName').value,mobile:$('lMobile').value,place:$('lCity').value+', '+$('lState').value});$('leadMsg').innerHTML='<div class="success">डेमो enquiry दर्ज हुई। वास्तविक WhatsApp संदेश अभी नहीं भेजा गया है; इसके लिए सर्वर/API कनेक्शन जरूरी है।</div>';e.target.reset();render()};
 
