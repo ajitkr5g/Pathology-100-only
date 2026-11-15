@@ -41,7 +41,117 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));$(b.dataset.p).classList.remove('hidden')});
 tests.forEach(t=>{let l=document.createElement('label');l.innerHTML='<input type="checkbox" value="'+esc(t)+'"> '+esc(t);$('patientTests').append(l);let c=document.createElement('label');c.innerHTML='<input type="checkbox" checked disabled> '+esc(t);$('catalogList').append(c)});
 $('labForm').onsubmit=e=>{e.preventDefault();$('labMsg').innerHTML='<div class="success">डेमो लैब प्रोफाइल इस स्क्रीन पर दर्ज हुआ।</div>'};
-$('patientForm').onsubmit=e=>{e.preventDefault();let selected=[...$('patientTests').querySelectorAll('input:checked')].map(x=>x.value);if(!selected.length){alert('कम से कम एक जाँच चुनें।');return}let p={id:'P'+String(patients.length+1).padStart(5,'0'),name:$('pName').value,age:$('pAge').value,gender:$('pGender').value,mobile:$('pMobile').value,tests:selected.join(', '),date:$('pDate').value||new Date().toISOString().slice(0,10)};patients.push(p);$('patientMsg').innerHTML='<div class="success">डेमो Patient ID: <b>'+p.id+'</b></div>';e.target.reset();render()};
+
+$('patientForm').onsubmit = async function(e) {
+  e.preventDefault();
+
+  const msg = $('patientMsg');
+  const labId = window.currentLabId;
+
+  if (!labId) {
+    msg.textContent = "Lab ID नहीं मिली। दोबारा Login करें।";
+    return;
+  }
+
+  const selected = [
+    ...$('patientTests').querySelectorAll('input:checked')
+  ].map(x => x.value);
+
+  if (!selected.length) {
+    alert("कम से कम एक जाँच चुनें।");
+    return;
+  }
+
+  const patientCode = "P" + Date.now();
+  const orderCode = "O" + Date.now();
+
+  msg.textContent = "मरीज का रिकॉर्ड सेव हो रहा है...";
+
+  try {
+    const { data: patient, error: patientError } =
+      await client
+        .from("patients")
+        .insert({
+          lab_id: labId,
+          patient_code: patientCode,
+          patient_name: $('pName').value.trim(),
+          age_years: $('pAge').value
+            ? Number($('pAge').value)
+            : null,
+          sex: $('pGender').value === "चुनें"
+            ? null
+            : $('pGender').value,
+          phone: $('pMobile').value.trim() || null
+        })
+        .select("id, patient_code, patient_name")
+        .single();
+
+    if (patientError) throw patientError;
+
+    const { data: order, error: orderError } =
+      await client
+        .from("test_orders")
+        .insert({
+          lab_id: labId,
+          patient_id: patient.id,
+          order_code: orderCode,
+          status: "pending"
+        })
+        .select("id")
+        .single();
+
+    if (orderError) {
+      throw new Error(
+        "मरीज सेव हुआ, लेकिन जाँच ऑर्डर नहीं बना: " +
+        orderError.message
+      );
+    }
+
+    const items = selected.map(name => ({
+      lab_id: labId,
+      test_order_id: order.id,
+      test_name: name,
+      price_paise: 0
+    }));
+
+    const { error: itemsError } = await client
+      .from("test_order_items")
+      .insert(items);
+
+    if (itemsError) {
+      throw new Error(
+        "मरीज और ऑर्डर सेव हुए, लेकिन जाँच सूची सेव नहीं हुई: " +
+        itemsError.message
+      );
+    }
+
+    const p = {
+      id: patient.patient_code,
+      name: patient.patient_name,
+      mobile: $('pMobile').value,
+      tests: selected.join(", "),
+      date: $('pDate').value ||
+        new Date().toISOString().slice(0, 10)
+    };
+
+    patients.push(p);
+
+    msg.innerHTML =
+      '<div class="success">मरीज Supabase में सेव हुआ। Patient ID: <b>' +
+      esc(patient.patient_code) +
+      '</b></div>';
+
+    e.target.reset();
+    render();
+
+  } catch (err) {
+    msg.innerHTML =
+      '<div class="danger">सेव करने में त्रुटि: ' +
+      esc(err.message) +
+      '</div>';
+  }
+};
+
 function render(){$('nPatients').textContent=patients.length;$('nBills').textContent=bills.length;$('nLeads').textContent=leads.length;$('patientRows').innerHTML=patients.length?patients.map(p=>`<tr><td>${p.id}</td><td>${esc(p.name)}</td><td>${esc(p.mobile)}</td><td>${esc(p.tests)}</td><td>${esc(p.date)}</td></tr>`).join(''):'<tr><td colspan="5">कोई रिकॉर्ड नहीं।</td></tr>';$('billPatient').innerHTML=patients.map(p=>`<option value="${p.id}">${p.id} — ${esc(p.name)}</option>`).join('');$('billRows').innerHTML=bills.length?bills.map(b=>`<tr><td>${b.id}</td><td>${esc(b.patient)}</td><td>₹${b.amount}</td><td>${b.status}</td></tr>`).join(''):'<tr><td colspan="4">अभी बिल नहीं।</td></tr>';$('leadRows').innerHTML=leads.length?leads.map(l=>`<tr><td>${esc(l.time)}</td><td>${esc(l.name)}</td><td>${esc(l.mobile)}</td><td>${esc(l.place)}</td><td><span class="pill">New</span></td></tr>`).join(''):'<tr><td colspan="5">अभी Lead नहीं।</td></tr>'}
 $('makeBill').onclick=()=>{let p=patients.find(x=>x.id===$('billPatient').value);if(!p){alert('पहले मरीज रजिस्टर करें।');return}let amount=Number($('billAmount').value);if(!Number.isFinite(amount)||amount<0){alert('सही राशि भरें।');return}bills.push({id:'B'+String(bills.length+1).padStart(5,'0'),patient:p.name,amount,status:$('billStatus').value});$('billMsg').innerHTML='<div class="success">डेमो बिल बनाया गया।</div>';render()};
 $('leadForm').onsubmit=e=>{e.preventDefault();leads.unshift({time:new Date().toLocaleString('hi-IN'),name:$('lName').value,mobile:$('lMobile').value,place:$('lCity').value+', '+$('lState').value});$('leadMsg').innerHTML='<div class="success">डेमो enquiry दर्ज हुई। वास्तविक WhatsApp संदेश अभी नहीं भेजा गया है; इसके लिए सर्वर/API कनेक्शन जरूरी है।</div>';e.target.reset();render()};
