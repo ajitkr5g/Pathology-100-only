@@ -589,7 +589,16 @@ await initializeApp();
 msg.textContent="Login सफल!";
 
 }catch(err){
-msg.textContent="Login Error: "+err.message;
+let detail=err.message;
+
+if(err.context && typeof err.context.json==="function"){
+  try{
+    const response=await err.context.clone().json();
+    detail=response.error || response.code || detail;
+  }catch(e){}
+}
+
+msg.textContent="Login Error: "+detail;
 }
 });
 
