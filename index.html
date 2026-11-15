@@ -100,6 +100,32 @@ document.getElementById("login-form").addEventListener("submit", async function(
 
     if (sessionError) throw sessionError;
 
+const { data: { user }, error: userError } =
+  await client.auth.getUser();
+
+if (userError || !user) {
+  throw new Error("User नहीं मिला");
+}
+
+const { data: membership, error: memberError } =
+  await client
+    .from("lab_memberships")
+    .select("lab_id, role")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+if (memberError) throw memberError;
+
+if (!membership) {
+  throw new Error("इस यूजर की Lab Membership नहीं मिली");
+}
+
+window.currentLabId = membership.lab_id;
+window.currentLabRole = membership.role;
+
+console.log("Lab ID:", window.currentLabId);
+console.log("Role:", window.currentLabRole);
+
     document.getElementById("login-box").style.display = "none";
     document.querySelector("header").style.display = "";
     document.querySelector("main").style.display = "";
