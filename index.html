@@ -114,7 +114,8 @@ $('patientForm').onsubmit = async function(e) {
       lab_id: labId,
       test_order_id: order.id,
       test_name: name,
-      price_paise: 0
+      lab_test_id: tests.find(t => t.test_name === name)?.id || null,
+price_paise: testPrices[name] || 0
     }));
 
     const { error: itemsError } = await client
@@ -331,7 +332,37 @@ if (!membership) {
 
 window.currentLabId = membership.lab_id;
 window.currentLabRole = membership.role;
+const { data: labTests, error: testsError } = await client
+  .from("lab_tests")
+  .select("id, test_name, price_paise")
+  .eq("lab_id", window.currentLabId)
+  .eq("is_active", true)
+  .order("test_name");
 
+if (testsError) throw testsError;
+
+tests = labTests || [];
+testPrices = Object.fromEntries(
+  tests.map(t => [t.test_name, t.price_paise])
+);
+
+$("patientTests").innerHTML = "";
+$("catalogList").innerHTML = "";
+
+tests.forEach(t => {
+  const price = (t.price_paise / 100).toFixed(2);
+
+  const label = document.createElement("label");
+  label.innerHTML =
+    '<input type="checkbox" value="' + esc(t.test_name) + '"> ' +
+    esc(t.test_name) + ' — ₹' + price;
+
+  $("patientTests").append(label);
+
+  const item = document.createElement("label");
+  item.textContent = t.test_name + " — ₹" + price;
+  $("catalogList").append(item);
+});
 console.log("Lab ID:", window.currentLabId);
 console.log("Role:", window.currentLabRole);
 
