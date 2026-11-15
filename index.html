@@ -234,7 +234,8 @@ $('searchExistingPatient').onclick = async function() {
           lab_id: labId,
           test_order_id: order.id,
           test_name: name,
-          price_paise: 0
+          lab_test_id: tests.find(t => t.test_name === name)?.id || null,
+price_paise: testPrices[name] || 0
         }));
 
         const { error: itemsError } = await client
