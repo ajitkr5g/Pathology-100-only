@@ -190,6 +190,8 @@ table{font-size:12px}
 <button class="tab" data-p="lab">Lab Profile</button>
 <button class="tab" data-p="patient">मरीज रजिस्ट्रेशन</button>
 <button class="tab" data-p="billing">Billing</button>
+<button class="tab" data-p="catalog">जाँच सूची</button>
+<button class="tab" data-p="culture">Culture</button>
 <button class="tab" data-p="results">Result & Report</button>
 <button class="tab" data-p="history">Records</button>
 <button class="tab" data-p="admin">Super Admin</button>
@@ -239,10 +241,10 @@ Result Verification → Report
 <input id="labAddress">
 </div>
 </div>
-<button class="btn" type="submit">Lab Profile सेव करें</button>
+<button class="btn">डेमो प्रोफाइल सेव करें</button>
 </form>
 <div id="labMsg"></div>
-<p class="muted">आपकी लैब प्रोफाइल Supabase Database में सेव होगी।</p>
+<p class="muted">यह प्रोफाइल फॉर्म अभी डेमो है। इसे स्थायी Supabase सेविंग से जोड़ना बाकी है।</p>
 </div>
 </section>
 
@@ -383,19 +385,8 @@ Result Verification → Report
 
 <section id="catalog" class="page hidden">
 <div class="card">
-<h2>जाँच सूची — Lab Test Catalog</h2>
-<p class="muted">इस लैब की जाँच जोड़ें और अपनी लैब के अनुसार कीमत तय करें। कीमत रुपये में भरें।</p>
-<div class="grid">
-  <div class="field"><label for="newTestName">जाँच का नाम</label><input id="newTestName" placeholder="जैसे CBC, LFT, KFT"></div>
-  <div class="field"><label for="newTestPrice">लैब की कीमत (₹)</label><input id="newTestPrice" type="number" min="0" step="0.01" placeholder="जैसे 350"></div>
-  <div class="field"><label for="newTestUnit">Default Unit</label><input id="newTestUnit" placeholder="जैसे mg/dL, g/dL"></div>
-  <div class="field"><label for="newTestRange">Default Reference Range</label><input id="newTestRange" placeholder="लैब द्वारा स्वीकृत range भरें"></div>
-</div>
-<button class="btn" id="addLabTest" type="button">+ नई जाँच जोड़ें</button>
-<div id="catalogMsg" class="muted" aria-live="polite"></div>
-</div>
-<div class="card">
-<h3>इस लैब की जाँच और कीमतें</h3>
+<h2>Lab Test Catalog</h2>
+<p class="muted">हर जाँच की Reference Range यहाँ एक बार सेट करें। Result Entry और Print Report में यही अपने-आप दिखाई देगी।</p>
 <div class="checks" id="catalogList"></div>
 </div>
 </section>
@@ -766,7 +757,9 @@ $("admin").style.display=window.isPlatformAdmin ? "" : "none";
 
 showApp();
 if(window.currentLabId){
-  await loadLabProfile();
+  const {data:labProfile}=await client.from("labs").select("lab_name")
+    .eq("id",window.currentLabId).maybeSingle();
+  window.currentLabName=labProfile?.lab_name || "Laboratory";
   await loadTests();
   await loadData();
 } else {
@@ -792,141 +785,13 @@ if(window.isPlatformAdmin){
 }
 }
 
-/* CBC parameter defaults are stored per lab test in lab_tests.cbc_parameter_ranges (JSONB). */
-const CBC_PARAMETERS=["Hemoglobin (Hb)","RBC Count","PCV / Hematocrit","MCV","MCH","MCHC","RDW-CV","Total WBC Count","Neutrophils","Lymphocytes","Monocytes","Eosinophils","Basophils","Platelet Count","MPV"];
-// Starter adult ranges transcribed from the user's supplied reference image.
-// Sex-specific values are shown together; the laboratory must verify against its analyzer.
-const CBC_REFERENCE_DEFAULTS={
-  "Hemoglobin (Hb)":{unit:"g/dL",range:"Adult male: 13.0–17.0; Adult female: 12.0–15.0"},
-  "RBC Count":{unit:"million/µL",range:"Adult male: 4.5–5.9; Adult female: 4.1–5.1"},
-  "PCV / Hematocrit":{unit:"%",range:"Adult male: 41–53; Adult female: 36–46"},
-  "MCV":{unit:"fL",range:"80–100"},
-  "MCH":{unit:"pg",range:"27–33"},
-  "MCHC":{unit:"g/dL",range:"32–36"},
-  "RDW-CV":{unit:"%",range:"11.5–14.5"},
-  "Total WBC Count":{unit:"/µL",range:"4,000–11,000"},
-  "Neutrophils":{unit:"%",range:"40–70"},
-  "Lymphocytes":{unit:"%",range:"20–40"},
-  "Monocytes":{unit:"%",range:"2–8"},
-  "Eosinophils":{unit:"%",range:"1–6"},
-  "Basophils":{unit:"%",range:"0–1"},
-  "Platelet Count":{unit:"/µL",range:"150,000–400,000"},
-  "MPV":{unit:"fL",range:"7.5–11.5"}
-};
-const cbcDefaultFor=(name)=>CBC_REFERENCE_DEFAULTS[name]||{};
-
-// KFT adult starter ranges. Lab owner can edit and save these per lab/analyzer.
-const KFT_PARAMETERS=["Blood Urea","Serum Creatinine","Blood Urea Nitrogen (BUN)","Uric Acid","Sodium (Na⁺)","Potassium (K⁺)","Chloride (Cl⁻)","Calcium","Phosphorus"];
-const KFT_REFERENCE_DEFAULTS={
-  "Blood Urea":{unit:"mg/dL",range:"15–40"},
-  "Serum Creatinine":{unit:"mg/dL",range:"Male 0.7–1.3; Female 0.6–1.1"},
-  "Blood Urea Nitrogen (BUN)":{unit:"mg/dL",range:"7–20"},
-  "Uric Acid":{unit:"mg/dL",range:"Male 3.5–7.2; Female 2.6–6.0"},
-  "Sodium (Na⁺)":{unit:"mmol/L",range:"135–145"},
-  "Potassium (K⁺)":{unit:"mmol/L",range:"3.5–5.1"},
-  "Chloride (Cl⁻)":{unit:"mmol/L",range:"98–107"},
-  "Calcium":{unit:"mg/dL",range:"8.5–10.5"},
-  "Phosphorus":{unit:"mg/dL",range:"2.5–4.5"}
-};
-const kftDefaultFor=(name)=>KFT_REFERENCE_DEFAULTS[name]||{};
-
-// LFT adult starter ranges; laboratory owner can edit and save per lab/analyzer.
-const LFT_PARAMETERS=["Total Bilirubin","Direct Bilirubin","Indirect Bilirubin","SGOT (AST)","SGPT (ALT)","Alkaline Phosphatase (ALP)","Gamma GT (GGT)","Total Protein","Albumin","Globulin","A/G Ratio"];
-const LFT_REFERENCE_DEFAULTS={
-  "Total Bilirubin":{unit:"mg/dL",range:"0.2–1.2"},
-  "Direct Bilirubin":{unit:"mg/dL",range:"0.0–0.3"},
-  "Indirect Bilirubin":{unit:"mg/dL",range:"0.2–0.9"},
-  "SGOT (AST)":{unit:"U/L",range:"10–40"},
-  "SGPT (ALT)":{unit:"U/L",range:"7–56"},
-  "Alkaline Phosphatase (ALP)":{unit:"U/L",range:"44–147"},
-  "Gamma GT (GGT)":{unit:"U/L",range:"9–48"},
-  "Total Protein":{unit:"g/dL",range:"6.0–8.3"},
-  "Albumin":{unit:"g/dL",range:"3.5–5.0"},
-  "Globulin":{unit:"g/dL",range:"2.0–3.5"},
-  "A/G Ratio":{unit:"ratio",range:"1.0–2.2"}
-};
-const lftDefaultFor=(name)=>LFT_REFERENCE_DEFAULTS[name]||{};
-
-// Parameter-wise starter catalog for all 20 existing tests. These are adult examples;
-// each laboratory must verify and may edit its own ranges in Catalog.
-const EXTRA_TEST_CONFIGS={
-  "Hemoglobin": [{parameter:"Hemoglobin",unit:"g/dL",range:"Adult male: 13.0–17.0; Adult female: 12.0–15.0"}],
-  "ESR": [{parameter:"ESR (1st hour)",unit:"mm/hr",range:"Male: 0–15; Female: 0–20"}],
-  "Platelet Count": [{parameter:"Platelet Count",unit:"/µL",range:"150,000–400,000"}],
-  "Blood Group": [{parameter:"ABO Group",unit:"—",range:"A / B / AB / O"},{parameter:"Rh Factor",unit:"—",range:"Positive / Negative"}],
-  "Blood Sugar Fasting": [{parameter:"Fasting Blood Glucose",unit:"mg/dL",range:"70–99"}],
-  "Blood Sugar PP": [{parameter:"Post-prandial Blood Glucose (2 hr)",unit:"mg/dL",range:"<140"}],
-  "HbA1c": [{parameter:"HbA1c",unit:"%",range:"Normal: <5.7; Prediabetes: 5.7–6.4; Diabetes: ≥6.5"}],
-  "Lipid Profile": [
-    {parameter:"Total Cholesterol",unit:"mg/dL",range:"Desirable: <200"},
-    {parameter:"Triglycerides",unit:"mg/dL",range:"<150"},
-    {parameter:"HDL Cholesterol",unit:"mg/dL",range:"Male: >40; Female: >50"},
-    {parameter:"LDL Cholesterol",unit:"mg/dL",range:"Optimal: <100"},
-    {parameter:"VLDL Cholesterol",unit:"mg/dL",range:"5–40"}
-  ],
-  "Thyroid Profile": [
-    {parameter:"T3 Total",unit:"ng/dL",range:"80–200"},
-    {parameter:"T4 Total",unit:"µg/dL",range:"5.0–12.0"},
-    {parameter:"TSH",unit:"µIU/mL",range:"0.4–4.0"}
-  ],
-  "Urine Routine": [
-    {parameter:"Colour",unit:"—",range:"Pale yellow to yellow"},
-    {parameter:"Appearance",unit:"—",range:"Clear"},
-    {parameter:"Specific Gravity",unit:"—",range:"1.005–1.030"},
-    {parameter:"pH",unit:"—",range:"4.5–8.0"},
-    {parameter:"Protein",unit:"—",range:"Negative"},
-    {parameter:"Glucose",unit:"—",range:"Negative"},
-    {parameter:"Ketone",unit:"—",range:"Negative"},
-    {parameter:"Bilirubin",unit:"—",range:"Negative"},
-    {parameter:"Blood",unit:"—",range:"Negative"},
-    {parameter:"Pus Cells",unit:"/HPF",range:"0–5"},
-    {parameter:"RBC",unit:"/HPF",range:"0–2"},
-    {parameter:"Epithelial Cells",unit:"/HPF",range:"Few"},
-    {parameter:"Casts",unit:"/LPF",range:"Nil / occasional hyaline"},
-    {parameter:"Crystals",unit:"—",range:"Nil"}
-  ],
-  "Stool Routine": [
-    {parameter:"Colour",unit:"—",range:"Brown"},
-    {parameter:"Consistency",unit:"—",range:"Formed"},
-    {parameter:"Mucus",unit:"—",range:"Absent"},
-    {parameter:"Occult Blood",unit:"—",range:"Negative"},
-    {parameter:"RBC",unit:"/HPF",range:"Absent"},
-    {parameter:"Pus Cells",unit:"/HPF",range:"0–2"},
-    {parameter:"Ova / Cyst",unit:"—",range:"Not seen"}
-  ],
-  "Widal": [
-    {parameter:"S. typhi O",unit:"Titre",range:"Interpret as per kit / local validated cutoff"},
-    {parameter:"S. typhi H",unit:"Titre",range:"Interpret as per kit / local validated cutoff"},
-    {parameter:"S. paratyphi AH",unit:"Titre",range:"Interpret as per kit / local validated cutoff"},
-    {parameter:"S. paratyphi BH",unit:"Titre",range:"Interpret as per kit / local validated cutoff"}
-  ],
-  "CRP": [{parameter:"C-Reactive Protein",unit:"mg/L",range:"<5"}],
-  "Dengue NS1": [{parameter:"Dengue NS1 Antigen",unit:"—",range:"Negative / Non-reactive"}],
-  "Malaria": [
-    {parameter:"Plasmodium falciparum",unit:"—",range:"Not seen"},
-    {parameter:"Plasmodium vivax",unit:"—",range:"Not seen"}
-  ],
-  "Vitamin D": [{parameter:"25-OH Vitamin D",unit:"ng/mL",range:"Sufficient: 30–100; Insufficient: 20–29; Deficient: <20"}],
-  "Vitamin B12": [{parameter:"Vitamin B12",unit:"pg/mL",range:"200–900"}]
-};
-function getTestParameterConfig(testName){
-  const n=String(testName||"").toLowerCase();
-  if(/\bcbc\b/.test(n)) return CBC_PARAMETERS.map(parameter=>({parameter,...(cbcDefaultFor(parameter))}));
-  if(/\bkft\b|kidney\s+function/.test(n)) return KFT_PARAMETERS.map(parameter=>({parameter,...(kftDefaultFor(parameter))}));
-  if(/\blft\b|liver\s+function/.test(n)) return LFT_PARAMETERS.map(parameter=>({parameter,...(lftDefaultFor(parameter))}));
-  const key=Object.keys(EXTRA_TEST_CONFIGS).find(k=>n===k.toLowerCase() || n.includes(k.toLowerCase()));
-  return key?EXTRA_TEST_CONFIGS[key]:null;
-}
-function isPanelTest(testName){return !!getTestParameterConfig(testName);}
-
-
 /* LOAD TESTS */
 
 async function loadTests(){
 
 const {data,error}=await client
 .from("lab_tests")
-.select("id,test_name,price_paise,unit,reference_range,cbc_parameter_ranges")
+.select("id,test_name,price_paise,reference_range")
 .eq("lab_id",window.currentLabId)
 .eq("is_active",true)
 .order("test_name");
@@ -967,63 +832,34 @@ if(window.currentLabRole==="lab_admin"){
 const item=document.createElement("div");
 item.className="card";
 item.style.margin="0";
-const parameterConfig=getTestParameterConfig(t.test_name);
-const savedDefaults=t.cbc_parameter_ranges && typeof t.cbc_parameter_ranges==="object" ? t.cbc_parameter_ranges : {};
-item.innerHTML=`<b>${esc(t.test_name)}</b><div class="muted">कीमत: ₹${price} · Unit: ${esc(t.unit||"—")} · Reference Range: ${esc(t.reference_range||"—")}</div><div class="grid" style="margin-top:8px"><div class="field"><label>Default Unit</label><input class="catalog-unit" value="${esc(t.unit||"")}" placeholder="जैसे mg/dL"></div><div class="field"><label>Default Reference Range</label><input class="catalog-range" value="${esc(t.reference_range||"")}" placeholder="लैब द्वारा स्वीकृत range"></div></div>${parameterConfig?`<details style="margin:10px 0"><summary>${esc(t.test_name)} के ${parameterConfig.length} पैरामीटर की Unit / Range सेट करें</summary><div class="scroll"><table><thead><tr><th>Parameter</th><th>Unit</th><th>Reference Range</th></tr></thead><tbody>${parameterConfig.map(row=>{const d=savedDefaults[row.parameter]||{};return `<tr><td>${esc(row.parameter)}</td><td><input class="test-param-unit" data-param="${esc(row.parameter)}" value="${esc(d.unit||row.unit||"")}" placeholder="Unit"></td><td><input class="test-param-range" data-param="${esc(row.parameter)}" value="${esc(d.range||row.range||"")}" placeholder="Lab-verified range"></td></tr>`;}).join("")}</tbody></table></div></details>`:""}<button class="btn catalog-meta-save" type="button">Unit / Range सेव करें</button>`;
-item.querySelector(".catalog-meta-save").addEventListener("click",()=>saveTestDefaults(t.id,item));
+item.innerHTML=`<b>${esc(t.test_name)}</b><div class="muted">कीमत: ₹${price}</div>
+<div class="field" style="margin-top:9px"><label>Reference Range</label>
+<input class="catalog-range" data-test="${esc(t.id)}" value="${esc(t.reference_range || "")}" placeholder="जैसे Adult: 4.0–10.0 (unit सहित)"></div>
+<button class="btn" type="button" data-save-range="${esc(t.id)}">Reference Range सेव करें</button>`;
+item.querySelector("button").addEventListener("click",()=>saveTestReferenceRange(t.id));
 $("catalogList").append(item);
 
 });
 }
-
-async function addLabTest(){
-  const msg=$("catalogMsg");
-  if(!window.currentLabId){
-    if(msg) msg.textContent="इस Login में Lab Membership जुड़ी नहीं है। पहले सही Lab Login से खोलें।";
-    return;
-  }
+async function saveTestReferenceRange(testId){
   if(window.currentLabRole!=="lab_admin"){
-    if(msg) msg.textContent="नई जाँच जोड़ने की अनुमति केवल Lab Owner को है।";
+    alert("केवल Lab Owner Reference Range बदल सकता है");
     return;
   }
-  const name=$("newTestName").value.trim();
-  const rupees=Number($("newTestPrice").value);
-  if(!name){ if(msg) msg.textContent="जाँच का नाम भरें।"; return; }
-  if($("newTestPrice").value==="" || !Number.isFinite(rupees) || rupees<0){
-    if(msg) msg.textContent="जाँच की सही कीमत रुपये में भरें।";
+  const input=document.querySelector(`.catalog-range[data-test="${CSS.escape(testId)}"]`);
+  if(!input)return;
+  const value=input.value.trim();
+  const {error}=await client.from("lab_tests")
+    .update({reference_range:value || null})
+    .eq("id",testId).eq("lab_id",window.currentLabId);
+  if(error){
+    alert("Reference Range सेव नहीं हुई: "+error.message);
     return;
   }
-  if(tests.some(t=>String(t.test_name).toLowerCase()===name.toLowerCase())){
-    if(msg) msg.textContent="यह जाँच इस लैब की सूची में पहले से मौजूद है।";
-    return;
-  }
-  const button=$("addLabTest");
-  if(button) button.disabled=true;
-  if(msg) msg.textContent="जाँच सेव हो रही है...";
-  try{
-    const {error}=await client.from("lab_tests").insert({
-      lab_id:window.currentLabId,
-      test_name:name,
-      price_paise:Math.round(rupees*100),
-      unit:$("newTestUnit").value.trim(),
-      reference_range:$("newTestRange").value.trim(),
-      is_active:true
-    });
-    if(error) throw error;
-    $("newTestName").value="";
-    $("newTestPrice").value="";
-    $("newTestUnit").value="";
-    $("newTestRange").value="";
-    if(msg) msg.textContent="नई जाँच सफलतापूर्वक जुड़ गई।";
-    await loadTests();
-  }catch(err){
-    if(msg) msg.textContent="जाँच सेव नहीं हुई: "+err.message;
-  }finally{
-    if(button) button.disabled=false;
-  }
+  const test=tests.find(t=>t.id===testId);
+  if(test)test.reference_range=value;
+  alert("Reference Range सेव हो गई।");
 }
-
-$("addLabTest")?.addEventListener("click",addLabTest);
 
 async function saveTestPrice(testId){
   if(window.currentLabRole!=="lab_admin"){
@@ -1062,24 +898,6 @@ async function saveTestPrice(testId){
   alert("नई कीमत सफलतापूर्वक सेव हो गई");
   await loadTests();
 }
-
-async function saveTestDefaults(testId,card){
-  if(window.currentLabRole!=="lab_admin"){alert("केवल Lab Owner Unit और Reference Range बदल सकता है");return;}
-  const unit=card.querySelector(".catalog-unit").value.trim();
-  const reference_range=card.querySelector(".catalog-range").value.trim();
-  const cbc_parameter_ranges={};
-  card.querySelectorAll(".test-param-unit").forEach(input=>{
-    const name=input.dataset.param;
-    const rangeInput=card.querySelector(`.test-param-range[data-param="${CSS.escape(name)}"]`);
-    const u=input.value.trim(), r=rangeInput?.value.trim()||"";
-    if(u||r) cbc_parameter_ranges[name]={unit:u,range:r};
-  });
-  const {error}=await client.from("lab_tests").update({unit,reference_range,cbc_parameter_ranges}).eq("id",testId).eq("lab_id",window.currentLabId);
-  if(error){alert("Unit / Range सेव नहीं हुआ: "+error.message);return;}
-  alert("Default Unit और Reference Range सेव हो गए।");
-  await loadTests();
-}
-
 /* LOAD ALL DATA */
 
 async function loadData(){
@@ -1198,26 +1016,24 @@ async function loadResultEntry(){
   resultEntries=data || [];
   const items=orderItems.filter(i=>i.test_order_id===orderId);
   if(!items.length){ box.textContent="इस ऑर्डर में कोई टेस्ट नहीं मिला।"; return; }
-  const cbcParameters=CBC_PARAMETERS;
+  const cbcParameters=["Hemoglobin (Hb)","RBC Count","PCV / Hematocrit","MCV","MCH","MCHC","RDW-CV","Total WBC Count","Neutrophils","Lymphocytes","Monocytes","Eosinophils","Basophils","Platelet Count","MPV"];
   box.innerHTML=items.map(item=>{
     const r=resultEntries.find(x=>x.test_order_item_id===item.id) || {};
-    const parameterConfig=getTestParameterConfig(item.test_name);
-    if(parameterConfig){
-      const panelKey="panel";
+    const isCBC=/\bcbc\b/i.test(item.test_name);
+    if(isCBC){
       let saved=[]; try{saved=JSON.parse(r.result_value || "[]"); if(!Array.isArray(saved))saved=[];}catch(_){saved=[];}
       const savedMap=Object.fromEntries(saved.map(x=>[x.parameter,x]));
-      const testDefault=tests.find(t=>t.test_name===item.test_name) || {};
       return `<div class="card" style="margin:10px 0;padding:12px"><b>${esc(item.test_name)}</b> <span class="pill">₹${money(item.price_paise)}</span>
-      <p class="muted">हर पैरामीटर का Result, Unit और Reference Range भरें।</p><div class="scroll"><table><thead><tr><th>Parameter</th><th>Result</th><th>Unit</th><th>Reference Range</th></tr></thead><tbody>
-      ${parameterConfig.map(row=>{const name=row.parameter;const v=savedMap[name]||{};const d=testDefault.cbc_parameter_ranges?.[name]||{};return `<tr><td>${esc(name)}</td><td><input class="panel-result" data-item="${esc(item.id)}" data-param="${esc(name)}" value="${esc(v.result||"")}" aria-label="${esc(name)} Result"></td><td><input class="panel-unit" data-item="${esc(item.id)}" data-param="${esc(name)}" value="${esc(v.unit||d.unit||row.unit||"")}" aria-label="${esc(name)} Unit"></td><td><input class="panel-range" data-item="${esc(item.id)}" data-param="${esc(name)}" value="${esc(v.range||d.range||row.range||"")}" aria-label="${esc(name)} Reference Range"></td></tr>`;}).join("")}
-      </tbody></table></div><div class="field" style="margin-top:8px"><label>Remarks</label><input class="panel-remarks" data-item="${esc(item.id)}" value="${esc(r.remarks||"")}" placeholder="वैकल्पिक टिप्पणी"></div></div>`;
+      <p class="muted">CBC के प्रत्येक पैरामीटर का Result, Unit और Reference Range भरें।</p><div class="scroll"><table><thead><tr><th>Parameter</th><th>Result</th><th>Unit</th><th>Reference Range</th></tr></thead><tbody>
+      ${cbcParameters.map((name,i)=>{const v=savedMap[name]||{};return `<tr><td>${esc(name)}</td><td><input class="cbc-result" data-item="${esc(item.id)}" data-param="${esc(name)}" value="${esc(v.result||"")}" aria-label="${esc(name)} Result"></td><td><input class="cbc-unit" data-item="${esc(item.id)}" data-param="${esc(name)}" value="${esc(v.unit||"")}" aria-label="${esc(name)} Unit"></td><td><input class="cbc-range" data-item="${esc(item.id)}" data-param="${esc(name)}" value="${esc(v.range||"")}" aria-label="${esc(name)} Reference Range"></td></tr>`;}).join("")}
+      </tbody></table></div><div class="field" style="margin-top:8px"><label>Remarks</label><input class="cbc-remarks" data-item="${esc(item.id)}" value="${esc(r.remarks||"")}" placeholder="वैकल्पिक टिप्पणी"></div></div>`;
     }
     return `<div class="card" style="margin:10px 0;padding:12px">
       <b>${esc(item.test_name)}</b> <span class="pill">₹${money(item.price_paise)}</span>
       <div class="grid" style="margin-top:8px">
         <div class="field"><label>Result</label><input class="res-value" data-item="${esc(item.id)}" value="${esc(r.result_value || "")}" placeholder="Result value"></div>
-        <div class="field"><label>Unit</label><input class="res-unit" data-item="${esc(item.id)}" value="${esc(r.unit || tests.find(t=>t.test_name===item.test_name)?.unit || "")}" placeholder="जैसे mg/dL"></div>
-        <div class="field"><label>Reference Range</label><input class="res-range" data-item="${esc(item.id)}" value="${esc(r.reference_range || tests.find(t=>t.test_name===item.test_name)?.reference_range || "")}" placeholder="Reference Range भरें"></div>
+        <div class="field"><label>Unit</label><input class="res-unit" data-item="${esc(item.id)}" value="${esc(r.unit || "")}" placeholder="जैसे mg/dL"></div>
+        <div class="field"><label>Reference Range</label><input class="res-range" data-item="${esc(item.id)}" value="${esc(r.reference_range || tests.find(t=>t.test_name===item.test_name)?.reference_range || "")}" placeholder="Test Catalog से Reference Range आएगी"></div>
         <div class="field"><label>Remarks</label><input class="res-remarks" data-item="${esc(item.id)}" value="${esc(r.remarks || "")}" placeholder="वैकल्पिक टिप्पणी"></div>
       </div></div>`;
   }).join("");
@@ -1231,15 +1047,15 @@ async function saveResultEntries(){
   if(!order) return;
   const {data:{user}}=await client.auth.getUser();
   const rows=[];
-  const itemIds=[...new Set([...document.querySelectorAll(".panel-result")].map(x=>x.dataset.item))];
-  itemIds.forEach(itemId=>{
-    const parameters=[...document.querySelectorAll(`.panel-result[data-item="${CSS.escape(itemId)}"]`)].map(input=>{
+  const cbcItemIds=[...new Set([...document.querySelectorAll(".cbc-result")].map(x=>x.dataset.item))];
+  cbcItemIds.forEach(itemId=>{
+    const parameters=[...document.querySelectorAll(`.cbc-result[data-item="${CSS.escape(itemId)}"]`)].map(input=>{
       const param=input.dataset.param;
-      const get=cls=>document.querySelector(`.panel-${cls}[data-item="${CSS.escape(itemId)}"][data-param="${CSS.escape(param)}"]`)?.value.trim()||"";
-      return {parameter:param,result:input.value.trim(),unit:get("unit"),range:get("range")};
+      const get=cls=>document.querySelector(`.${cls}[data-item="${CSS.escape(itemId)}"][data-param="${CSS.escape(param)}"]`)?.value.trim()||"";
+      return {parameter:param,result:input.value.trim(),unit:get("cbc-unit"),range:get("cbc-range")};
     }).filter(x=>x.result||x.unit||x.range);
-    const remarks=document.querySelector(`.panel-remarks[data-item="${CSS.escape(itemId)}"]`)?.value.trim()||"";
-    if(parameters.length||remarks) rows.push({lab_id:window.currentLabId,test_order_id:orderId,patient_id:order.patient_id,test_order_item_id:itemId,result_value:JSON.stringify(parameters),unit:"Panel",reference_range:"",remarks,entered_by:user?.id||null,status:"draft",updated_at:new Date().toISOString()});
+    const remarks=document.querySelector(`.cbc-remarks[data-item="${CSS.escape(itemId)}"]`)?.value.trim()||"";
+    if(parameters.length||remarks) rows.push({lab_id:window.currentLabId,test_order_id:orderId,patient_id:order.patient_id,test_order_item_id:itemId,result_value:JSON.stringify(parameters),unit:"CBC Panel",reference_range:"",remarks,entered_by:user?.id||null,status:"draft",updated_at:new Date().toISOString()});
   });
   const values=[...document.querySelectorAll(".res-value")];
   values.forEach(input=>{
@@ -1259,39 +1075,11 @@ async function saveResultEntries(){
   await loadResultEntry();
 }
 
-// Print में numeric result को reference range से compare करके abnormal result bold करें.
-// Qualitative ranges (Negative/Not seen आदि) को auto-flag नहीं किया जाता.
-function isResultOutsideRange(resultValue, referenceRange, patientSex){
-  const raw=String(resultValue??"").trim();
-  let range=String(referenceRange??"").trim();
-  if(!raw || !range) return false;
-  const vm=raw.replace(/,/g,"").match(/[-+]?\d*\.?\d+/);
-  if(!vm) return false;
-  const value=Number(vm[0]); if(!Number.isFinite(value)) return false;
-  const sex=String(patientSex||"").toLowerCase();
-  if(/male|female/i.test(range)){
-    const female=/female|\bf\b/.test(sex), male=/male|\bm\b/.test(sex)&&!female;
-    if(!female&&!male) return false;
-    const re=female?/female\s*:?\s*([<>]=?\s*[-+]?\d[\d,.]*(?:\s*[-–—]\s*[-+]?\d[\d,.]*)?)/i:/male\s*:?\s*([<>]=?\s*[-+]?\d[\d,.]*(?:\s*[-–—]\s*[-+]?\d[\d,.]*)?)/i;
-    const m=range.match(re); if(!m) return false; range=m[1];
-  }
-  range=range.replace(/,/g,"");
-  const cm=range.match(/(?:^|\s)(<=|>=|<|>)\s*([-+]?\d*\.?\d+)/);
-  if(cm){const limit=Number(cm[2]); if(cm[1]==="<")return value>=limit; if(cm[1]==="<=")return value>limit; if(cm[1]===">")return value<=limit; if(cm[1]===">=")return value<limit;}
-  const nums=[...range.matchAll(/[-+]?\d*\.?\d+/g)].map(m=>Number(m[0])).filter(Number.isFinite);
-  if(nums.length>=2){const lo=Math.min(nums[0],nums[1]),hi=Math.max(nums[0],nums[1]);return value<lo||value>hi;}
-  return false;
-}
-function printResultCell(value,range,sex){
-  const abnormal=isResultOutsideRange(value,range,sex);
-  return `<td class="${abnormal?"abnormal-result":""}">${esc(value||"")}</td>`;
-}
-
 async function printLabReport(){
   const orderId=$("resultOrder").value;
   if(!orderId){ alert("पहले जाँच ऑर्डर चुनें।"); return; }
 
-  // मोबाइल ब्राउज़र popup को block न करे, इसलिए user click पर ही window खोलें।
+  // Popup user click पर ही खोलें ताकि mobile browser इसे block न करे।
   const w=window.open("","_blank");
   if(!w){ alert("Report खोलने के लिए browser में Pop-ups allow करें।"); return; }
   w.document.write("<p style='font-family:Arial;padding:20px'>रिपोर्ट तैयार हो रही है...</p>");
@@ -1305,7 +1093,6 @@ async function printLabReport(){
       .select("test_order_item_id,result_value,unit,reference_range,remarks,status")
       .eq("lab_id",window.currentLabId)
       .eq("test_order_id",orderId);
-
     if(error) throw error;
 
     const results=data || [];
@@ -1313,21 +1100,66 @@ async function printLabReport(){
     if(!items.length) throw new Error("इस ऑर्डर में कोई टेस्ट नहीं मिला।");
     if(!results.length) throw new Error("पहले कम से कम एक टेस्ट का Result सेव करें।");
 
-    const rows=items.map(item=>{
-      const r=results.find(x=>x.test_order_item_id===item.id);
-      if(isPanelTest(item.test_name)){
-        let params=[];try{params=JSON.parse(r?.result_value||"[]");if(!Array.isArray(params))params=[];}catch(_){params=[];}
-        const testDefault=tests.find(t=>t.test_name===item.test_name)||{};
-        const detail=params.length?`<table><thead><tr><th colspan="4">${esc(item.test_name)}</th></tr><tr><th>Parameter</th><th>Result</th><th>Unit</th><th>Reference Range</th></tr></thead><tbody>${params.map(x=>{const d=testDefault.cbc_parameter_ranges?.[x.parameter]||{};const starter=(getTestParameterConfig(item.test_name)||[]).find(z=>z.parameter===x.parameter)||{};const range=x.range||d.range||testDefault.reference_range||starter.range||"";return `<tr><td>${esc(x.parameter||"")}</td>${printResultCell(x.result,range,patient.sex)}<td>${esc(x.unit||d.unit||testDefault.unit||starter.unit||"")}</td><td>${esc(range)}</td></tr>`;}).join("")}</tbody></table>`:`<p>${esc(item.test_name)} — Pending</p>`;
-        return `<tr><td colspan="5">${detail}<p><b>Remarks:</b> ${esc(r?.remarks||"")}</p></td></tr>`;
+    // केवल स्पष्ट numeric range से H/L तय करें; अस्पष्ट/qualitative ranges को स्वतः flag न करें।
+    const getFlag=(value,range)=>{
+      const v=Number(String(value??"").replace(/,/g,"").trim());
+      if(!Number.isFinite(v) || !String(value??"").trim() || !range) return "";
+      const text=String(range);
+      const sex=String(patient.sex||"").toLowerCase();
+      let selected=text;
+      const sexMatch=text.match(/(?:male|female)[^;|]*/ig);
+      if(sexMatch && sexMatch.length){
+        const wanted=sex.includes("f") || sex.includes("महिला") ? "female" : "male";
+        selected=sexMatch.find(x=>x.toLowerCase().includes(wanted)) || text;
       }
-      const testDefault=tests.find(t=>t.test_name===item.test_name) || {};
-      const singleRange=r?.reference_range || testDefault.reference_range || "";
-      return `<tr><td>${esc(item.test_name)}</td>${printResultCell(r?.result_value || "Pending",singleRange,patient.sex)}<td>${esc(r?.unit || testDefault.unit || "")}</td><td>${esc(singleRange)}</td><td>${esc(r?.remarks || "")}</td></tr>`;
+      const m=selected.match(/(-?\d+(?:\.\d+)?)\s*(?:–|—|to|-)\s*(-?\d+(?:\.\d+)?)/i);
+      if(!m) return "";
+      const low=Number(m[1]), high=Number(m[2]);
+      if(v<low) return "L";
+      if(v>high) return "H";
+      return "";
+    };
+
+    const renderParamTable=(testName,params,remarks)=>{
+      const filled=params.filter(x=>x && (x.parameter||x.result||x.unit||x.range));
+      const body=filled.map(x=>{
+        const flag=getFlag(x.result,x.range);
+        return `<tr><td>${esc(x.parameter||"")}</td><td class="${flag?'abnormal':''}">${esc(x.result||"")}${flag?` <strong class="flag">${flag}</strong>`:""}</td><td>${esc(x.unit||"")}</td><td>${esc(x.range||"")}</td></tr>`;
+      }).join("");
+      return `<section class="test-block"><h4>${esc(testName)}</h4><table><thead><tr><th>Parameter</th><th>Result</th><th>Unit</th><th>Reference Range</th></tr></thead><tbody>${body || '<tr><td colspan="4">Result Pending</td></tr>'}</tbody></table><p class="remarks"><b>Remarks:</b> ${esc(remarks||"—")}</p></section>`;
+    };
+
+    const reportSections=items.map(item=>{
+      const r=results.find(x=>x.test_order_item_id===item.id);
+      if(/\bcbc\b/i.test(item.test_name) || (r?.result_value||"").trim().startsWith("[")){
+        let params=[];
+        try{params=JSON.parse(r?.result_value||"[]");if(!Array.isArray(params))params=[];}catch(_){params=[];}
+        return renderParamTable(item.test_name,params,r?.remarks);
+      }
+      const range=r?.reference_range || tests.find(t=>t.test_name===item.test_name)?.reference_range || "";
+      const flag=getFlag(r?.result_value,range);
+      const params=[{parameter:item.test_name,result:r?.result_value||"Pending",unit:r?.unit||"",range}];
+      return renderParamTable(item.test_name,params,r?.remarks);
     }).join("");
 
     w.document.open();
-    w.document.write(`<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab Report ${esc(order.order_code)}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#183129}h2,h3{text-align:center}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{border:1px solid #999;padding:9px;text-align:left}.abnormal-result{font-weight:900;color:#000!important;background:#eee!important}.warning{border:2px solid #a33b32;padding:10px;text-align:center;font-weight:bold;margin:16px 0}.muted{color:#555;font-size:12px}@media print{button{display:none}}</style></head><body><h2>${esc(window.currentLabName || "Laboratory")}</h2><h3>LABORATORY TEST REPORT</h3><div class="warning">DRAFT — NOT MEDICALLY VERIFIED — अधिकृत समीक्षा के बाद ही जारी करें</div><p><b>Patient:</b> ${esc(patient.name)} &nbsp; <b>Patient ID:</b> ${esc(patient.id)}</p><p><b>Age / Sex:</b> ${esc(patient.age || "-")} / ${esc(patient.sex || "-")} &nbsp; <b>Mobile:</b> ${esc(patient.mobile || "-")}</p><p><b>Order:</b> ${esc(order.order_code)} &nbsp; <b>Date:</b> ${esc(new Date().toLocaleDateString("en-IN"))}</p><table><thead><tr><th>Test</th><th>Result</th><th>Unit</th><th>Reference Range</th><th>Remarks</th></tr></thead><tbody>${rows}</tbody></table><p style="margin-top:42px">Technician: ____________________ &nbsp;&nbsp; Authorized Reviewer: ____________________</p><p>Signature / Stamp: __________________________________</p><p class="muted">यह रिपोर्ट ड्राफ्ट है। अधिकृत लैब प्रोफेशनल की जाँच और अनुमोदन के बिना इसे अंतिम मेडिकल रिपोर्ट न मानें।</p><script>window.onload=()=>window.print();<\/script></body></html>`);
+    w.document.write(`<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab Report ${esc(order.order_code)}</title>
+<style>
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#172b25;margin:0;padding:18px;font-size:12px;line-height:1.35}
+.report{max-width:900px;margin:0 auto}.head{text-align:center;margin-bottom:12px}.head h2{font-size:20px;margin:0 0 5px;font-weight:800}.head h3{font-size:14px;margin:0;font-weight:700}
+.draft{border:1.5px solid #9b3e36;color:#762c27;text-align:center;padding:6px;font-weight:700;margin:12px 0}
+.patient{display:grid;grid-template-columns:1fr 1fr;gap:5px 18px;margin:10px 0 14px}.patient div{padding:2px 0}
+.test-block{border:1px solid #888;padding:8px;margin:10px 0;break-inside:avoid;page-break-inside:avoid}.test-block h4{font-size:13px;margin:0 0 6px;background:#f1f4f2;padding:5px}
+table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #999;padding:6px;text-align:left;overflow-wrap:anywhere}th{background:#f5f6f5;font-weight:700}td:nth-child(2){width:18%}.abnormal{font-weight:800;color:#111!important}.flag{font-weight:900;color:#111}.remarks{margin:7px 0 0}.sign{margin-top:24px;break-inside:avoid}.sign p{margin:8px 0}.foot{font-size:10px;color:#555;margin-top:14px;border-top:1px solid #ccc;padding-top:7px}
+@page{size:A4;margin:12mm}@media print{body{padding:0;font-size:11px}.test-block{break-inside:avoid;page-break-inside:avoid}.draft{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media(max-width:520px){body{padding:10px}.patient{grid-template-columns:1fr 1fr}th,td{padding:4px;font-size:10px}}
+</style></head><body><main class="report"><header class="head"><h2>${esc(window.currentLabName || "PATHOLOGY 100 ONLY")}</h2><h3>LABORATORY TEST REPORT</h3></header>
+<div class="draft">DRAFT — NOT MEDICALLY VERIFIED — अधिकृत समीक्षा के बाद ही जारी करें</div>
+<section class="patient"><div><b>Patient:</b> ${esc(patient.name)}</div><div><b>Patient ID:</b> ${esc(patient.id)}</div><div><b>Age / Sex:</b> ${esc(patient.age || "-")} / ${esc(patient.sex || "-")}</div><div><b>Mobile:</b> ${esc(patient.mobile || "-")}</div><div><b>Order:</b> ${esc(order.order_code)}</div><div><b>Date:</b> ${esc(new Date().toLocaleDateString("en-IN"))}</div></section>
+${reportSections}
+<section class="sign"><p>Technician: __________________________ &nbsp;&nbsp; Authorized Reviewer: __________________________</p><p>Signature / Stamp: _________________________________________________</p></section>
+<footer class="foot">यह रिपोर्ट ड्राफ्ट है। अधिकृत लैब प्रोफेशनल की जाँच और अनुमोदन के बिना इसे अंतिम मेडिकल रिपोर्ट न मानें। Abnormal परिणामों की पुष्टि अधिकृत विशेषज्ञ द्वारा की जानी चाहिए।</footer>
+</main><script>window.onload=()=>window.print();<\/script></body></html>`);
     w.document.close();
   }catch(err){
     w.document.open();
@@ -1995,56 +1827,15 @@ $("leadForm").onsubmit=async e=>{
 
 $("refreshLeads")?.addEventListener("click",loadLeads);
 
-/* LAB PROFILE — SUPABASE DATABASE */
+/* LAB PROFILE - DEMO */
 
-async function loadLabProfile(){
-  if(!window.currentLabId) return;
-  const msg=$("labMsg");
-  if(msg) msg.textContent="Lab Profile लोड हो रही है...";
-  const {data,error}=await client.from("labs")
-    .select("lab_name,phone,city,state,address")
-    .eq("id",window.currentLabId)
-    .maybeSingle();
-  if(error) throw error;
-  if(!data) throw new Error("इस Lab की प्रोफाइल नहीं मिली।");
-  $("labName").value=data.lab_name || "";
-  $("labPhone").value=data.phone || "";
-  $("labCity").value=data.city || "";
-  $("labState").value=data.state || "";
-  $("labAddress").value=data.address || "";
-  window.currentLabName=data.lab_name || "Laboratory";
-  if(msg) msg.textContent="";
-}
+$("labForm").onsubmit=e=>{
 
-$("labForm").onsubmit=async e=>{
-  e.preventDefault();
-  const msg=$("labMsg");
-  if(!window.currentLabId){
-    msg.innerHTML='<div class="danger">इस Login में Lab Membership जुड़ी नहीं है। Super Admin की प्रोफाइल यहाँ से सेव नहीं होगी।</div>';
-    return;
-  }
-  const button=e.submitter || e.target.querySelector('button[type="submit"]');
-  if(button) button.disabled=true;
-  msg.textContent="Lab Profile Supabase में सेव हो रही है...";
-  const payload={
-    lab_name:$("labName").value.trim(),
-    phone:$("labPhone").value.trim() || null,
-    city:$("labCity").value.trim() || null,
-    state:$("labState").value.trim() || null,
-    address:$("labAddress").value.trim() || null
-  };
-  try{
-    if(!payload.lab_name) throw new Error("लैब का नाम भरें।");
-    const {error}=await client.from("labs").update(payload).eq("id",window.currentLabId);
-    if(error) throw error;
-    window.currentLabName=payload.lab_name;
-    msg.innerHTML='<div class="success">Lab Profile Supabase Database में सफलतापूर्वक सेव हुई।</div>';
-    await loadSuperAdminData();
-  }catch(err){
-    msg.innerHTML='<div class="danger">Profile सेव नहीं हुई: '+esc(err.message)+'</div>';
-  }finally{
-    if(button) button.disabled=false;
-  }
+e.preventDefault();
+
+$("labMsg").innerHTML=
+'<div class="success">प्रोफाइल विवरण दर्ज हुआ। स्थायी सेविंग अभी नहीं जुड़ी है।</div>';
+
 };
 
 /* LOGOUT */
