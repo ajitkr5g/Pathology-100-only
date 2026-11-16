@@ -385,8 +385,17 @@ Result Verification → Report
 
 <section id="catalog" class="page hidden">
 <div class="card">
-<h2>Lab Test Catalog</h2>
-<p class="muted">हर जाँच की Reference Range यहाँ एक बार सेट करें। Result Entry और Print Report में यही अपने-आप दिखाई देगी।</p>
+<h2>जाँच सूची — Lab Test Catalog</h2>
+<p class="muted">इस लैब की जाँच जोड़ें और अपनी लैब के अनुसार कीमत तय करें। कीमत रुपये में भरें।</p>
+<div class="grid">
+  <div class="field"><label for="newTestName">जाँच का नाम</label><input id="newTestName" placeholder="जैसे CBC, LFT, KFT"></div>
+  <div class="field"><label for="newTestPrice">लैब की कीमत (₹)</label><input id="newTestPrice" type="number" min="0" step="0.01" placeholder="जैसे 350"></div>
+</div>
+<button class="btn" id="addLabTest" type="button">+ नई जाँच जोड़ें</button>
+<div id="catalogMsg" class="muted" aria-live="polite"></div>
+</div>
+<div class="card">
+<h3>इस लैब की जाँच और कीमतें</h3>
 <div class="checks" id="catalogList"></div>
 </div>
 </section>
@@ -789,7 +798,7 @@ async function loadTests(){
 
 const {data,error}=await client
 .from("lab_tests")
-.select("id,test_name,price_paise,reference_range")
+.select("id,test_name,price_paise")
 .eq("lab_id",window.currentLabId)
 .eq("is_active",true)
 .order("test_name");
@@ -830,34 +839,56 @@ if(window.currentLabRole==="lab_admin"){
 const item=document.createElement("div");
 item.className="card";
 item.style.margin="0";
-item.innerHTML=`<b>${esc(t.test_name)}</b><div class="muted">कीमत: ₹${price}</div>
-<div class="field" style="margin-top:9px"><label>Reference Range</label>
-<input class="catalog-range" data-test="${esc(t.id)}" value="${esc(t.reference_range || "")}" placeholder="जैसे Adult: 4.0–10.0 (unit सहित)"></div>
-<button class="btn" type="button" data-save-range="${esc(t.id)}">Reference Range सेव करें</button>`;
-item.querySelector("button").addEventListener("click",()=>saveTestReferenceRange(t.id));
+item.innerHTML=`<b>${esc(t.test_name)}</b><div class="muted">कीमत: ₹${price}</div>`;
 $("catalogList").append(item);
 
 });
 }
-async function saveTestReferenceRange(testId){
+
+async function addLabTest(){
+  const msg=$("catalogMsg");
+  if(!window.currentLabId){
+    if(msg) msg.textContent="इस Login में Lab Membership जुड़ी नहीं है। पहले सही Lab Login से खोलें।";
+    return;
+  }
   if(window.currentLabRole!=="lab_admin"){
-    alert("केवल Lab Owner Reference Range बदल सकता है");
+    if(msg) msg.textContent="नई जाँच जोड़ने की अनुमति केवल Lab Owner को है।";
     return;
   }
-  const input=document.querySelector(`.catalog-range[data-test="${CSS.escape(testId)}"]`);
-  if(!input)return;
-  const value=input.value.trim();
-  const {error}=await client.from("lab_tests")
-    .update({reference_range:value || null})
-    .eq("id",testId).eq("lab_id",window.currentLabId);
-  if(error){
-    alert("Reference Range सेव नहीं हुई: "+error.message);
+  const name=$("newTestName").value.trim();
+  const rupees=Number($("newTestPrice").value);
+  if(!name){ if(msg) msg.textContent="जाँच का नाम भरें।"; return; }
+  if($("newTestPrice").value==="" || !Number.isFinite(rupees) || rupees<0){
+    if(msg) msg.textContent="जाँच की सही कीमत रुपये में भरें।";
     return;
   }
-  const test=tests.find(t=>t.id===testId);
-  if(test)test.reference_range=value;
-  alert("Reference Range सेव हो गई।");
+  if(tests.some(t=>String(t.test_name).toLowerCase()===name.toLowerCase())){
+    if(msg) msg.textContent="यह जाँच इस लैब की सूची में पहले से मौजूद है।";
+    return;
+  }
+  const button=$("addLabTest");
+  if(button) button.disabled=true;
+  if(msg) msg.textContent="जाँच सेव हो रही है...";
+  try{
+    const {error}=await client.from("lab_tests").insert({
+      lab_id:window.currentLabId,
+      test_name:name,
+      price_paise:Math.round(rupees*100),
+      is_active:true
+    });
+    if(error) throw error;
+    $("newTestName").value="";
+    $("newTestPrice").value="";
+    if(msg) msg.textContent="नई जाँच सफलतापूर्वक जुड़ गई।";
+    await loadTests();
+  }catch(err){
+    if(msg) msg.textContent="जाँच सेव नहीं हुई: "+err.message;
+  }finally{
+    if(button) button.disabled=false;
+  }
 }
+
+$("addLabTest")?.addEventListener("click",addLabTest);
 
 async function saveTestPrice(testId){
   if(window.currentLabRole!=="lab_admin"){
@@ -1031,7 +1062,7 @@ async function loadResultEntry(){
       <div class="grid" style="margin-top:8px">
         <div class="field"><label>Result</label><input class="res-value" data-item="${esc(item.id)}" value="${esc(r.result_value || "")}" placeholder="Result value"></div>
         <div class="field"><label>Unit</label><input class="res-unit" data-item="${esc(item.id)}" value="${esc(r.unit || "")}" placeholder="जैसे mg/dL"></div>
-        <div class="field"><label>Reference Range</label><input class="res-range" data-item="${esc(item.id)}" value="${esc(r.reference_range || tests.find(t=>t.test_name===item.test_name)?.reference_range || "")}" placeholder="Test Catalog से Reference Range आएगी"></div>
+        <div class="field"><label>Reference Range</label><input class="res-range" data-item="${esc(item.id)}" value="${esc(r.reference_range || tests.find(t=>t.test_name===item.test_name)?.reference_range || "")}" placeholder="Reference Range भरें"></div>
         <div class="field"><label>Remarks</label><input class="res-remarks" data-item="${esc(item.id)}" value="${esc(r.remarks || "")}" placeholder="वैकल्पिक टिप्पणी"></div>
       </div></div>`;
   }).join("");
