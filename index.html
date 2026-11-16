@@ -99,6 +99,10 @@ background:white;border:1px solid #ddd;border-radius:15px
 .auth-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .auth-actions button{flex:1}
 
+
+.parameter-card input{min-width:0}
+@media(min-width:720px){.parameter-list{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:380px){.parameter-card .grid{grid-template-columns:1fr!important}}
 @media(max-width:520px){
 header{align-items:flex-start}
 .card{padding:13px}
@@ -190,7 +194,7 @@ table{font-size:12px}
 <button class="tab" data-p="lab">Lab Profile</button>
 <button class="tab" data-p="patient">मरीज रजिस्ट्रेशन</button>
 <button class="tab" data-p="billing">Billing</button>
-<button class="tab" data-p="catalog">जाँच सूची</button>
+
 <button class="tab" data-p="culture">Culture</button>
 <button class="tab" data-p="results">Result & Report</button>
 <button class="tab" data-p="history">Records</button>
@@ -251,15 +255,6 @@ Result Verification → Report
 <section id="patient" class="page hidden">
 <div class="card">
 <h2>मरीज रजिस्ट्रेशन</h2>
-
-<h3>पुराना मरीज खोजें</h3>
-<div class="field">
-<input id="existingPatientSearch" placeholder="मोबाइल या Patient ID">
-</div>
-<button class="btn" id="searchExistingPatient" type="button">मरीज खोजें</button>
-<div id="existingPatientResult"></div>
-
-<hr>
 
 <form id="patientForm">
 <div class="grid">
@@ -448,7 +443,14 @@ Result Verification → Report
 
 <section id="history" class="page hidden">
 <div class="card">
-<h2>Patient Records</h2>
+<h2>Patient Records / मरीज रिकॉर्ड</h2>
+<h3>पुराना मरीज खोजें</h3>
+<div class="field">
+<label>मोबाइल नंबर या Patient ID</label>
+<input id="existingPatientSearch" placeholder="मोबाइल या Patient ID">
+</div>
+<button class="btn" id="searchExistingPatient" type="button">मरीज खोजें</button>
+<div id="existingPatientResult"></div>
 <div class="scroll">
 <table>
 <thead>
@@ -661,21 +663,36 @@ $("register-form").addEventListener("submit",async e=>{
       throw new Error("यह Username सुरक्षित Super Admin/Lab Login के लिए आरक्षित है।");
     }
     const {data,error}=await client.functions.invoke("register-lab",{body:payload});
-    if(error || !data || !data.success){
-      throw new Error(data?.error || error?.message || "Registration असफल।");
+    if(error){
+      // Preserve the underlying transport/CORS message for diagnosis.
+      const details = error.context?.message || error.message || "Edge Function तक अनुरोध नहीं पहुँचा।";
+      throw new Error(details);
     }
-    if(!data.access_token || !data.refresh_token){
-      throw new Error("Registration बना, लेकिन सुरक्षित Login session नहीं मिला। कृपया Admin से जाँच करवाएँ।");
+    if(!data || !data.success){
+      throw new Error(data?.error || "Registration असफल।");
     }
-    const {error:sessionError}=await client.auth.setSession({
-      access_token:data.access_token,
-      refresh_token:data.refresh_token
-    });
-    if(sessionError) throw sessionError;
-    msg.textContent=data.message || "Registration सफल।";
-    await initializeApp();
+
+    if(data.email_verification_required){
+      msg.textContent = data.message ||
+        "Registration शुरू हो गया है। Email में confirmation link खोलें, फिर Username और Password से Login करें।";
+      $("register-form").reset();
+      return;
+    }
+
+    if(data.access_token && data.refresh_token){
+      const {error:sessionError}=await client.auth.setSession({
+        access_token:data.access_token,
+        refresh_token:data.refresh_token
+      });
+      if(sessionError) throw sessionError;
+      msg.textContent=data.message || "Registration सफल।";
+      await initializeApp();
+      return;
+    }
+
+    msg.textContent = data.message || "Registration सफल। अब Login करें।";
   }catch(err){
-    msg.textContent="Registration Error: "+err.message;
+    msg.textContent="Registration Error: "+(err?.message || "अनुरोध असफल। इंटरनेट और Supabase Function जाँचें।");
   }finally{
     submit.disabled=false;
   }
@@ -984,6 +1001,122 @@ populateResultOrders();
 
 }
 
+/* STANDARD TEST PARAMETER TEMPLATES
+   Adult reference ranges are starter values only. Lab owner/authorized reviewer
+   must verify age-, sex-, method- and instrument-specific ranges before use. */
+const TEST_PARAMETER_TEMPLATES = [
+  {match:/\bcbc\b|complete blood count|hemogram/i, params:[
+    ["Hemoglobin (Hb)","g/dL","Male 13.0–17.0; Female 12.0–15.0"],
+    ["RBC Count","million/µL","Male 4.5–5.9; Female 4.1–5.1"],
+    ["PCV / Hematocrit","%","Male 40–52; Female 36–48"],
+    ["MCV","fL","80–100"],["MCH","pg","27–33"],["MCHC","g/dL","32–36"],
+    ["RDW-CV","%","11.5–14.5"],["Total WBC Count","cells/µL","4,000–11,000"],
+    ["Neutrophils","%","40–75"],["Lymphocytes","%","20–40"],
+    ["Monocytes","%","2–10"],["Eosinophils","%","1–6"],["Basophils","%","0–1"],
+    ["Platelet Count","cells/µL","150,000–450,000"],["MPV","fL","7.5–11.5"]
+  ]},
+  {match:/\bkft\b|\brft\b|renal|kidney function/i, params:[
+    ["Blood Urea","mg/dL","15–40"],["Serum Creatinine","mg/dL","Male 0.7–1.3; Female 0.6–1.1"],
+    ["Blood Urea Nitrogen (BUN)","mg/dL","7–20"],["Uric Acid","mg/dL","Male 3.5–7.2; Female 2.6–6.0"],
+    ["Sodium","mmol/L","135–145"],["Potassium","mmol/L","3.5–5.1"],
+    ["Chloride","mmol/L","98–107"],["eGFR","mL/min/1.73m²","90 or above"]
+  ]},
+  {match:/\blft\b|liver function|hepatic/i, params:[
+    ["Total Bilirubin","mg/dL","0.2–1.2"],["Direct Bilirubin","mg/dL","0.0–0.3"],
+    ["Indirect Bilirubin","mg/dL","0.2–0.9"],["AST (SGOT)","U/L","10–40"],
+    ["ALT (SGPT)","U/L","7–56"],["Alkaline Phosphatase (ALP)","U/L","44–147"],
+    ["Total Protein","g/dL","6.0–8.3"],["Albumin","g/dL","3.5–5.0"],
+    ["Globulin","g/dL","2.0–3.5"],["A/G Ratio","","1.0–2.2"]
+  ]},
+  {match:/lipid|cholesterol profile/i, params:[
+    ["Total Cholesterol","mg/dL","Desirable <200"],["Triglycerides","mg/dL","<150"],
+    ["HDL Cholesterol","mg/dL","Male >40; Female >50"],
+    ["LDL Cholesterol","mg/dL","Optimal <100"],["VLDL Cholesterol","mg/dL","5–40"],
+    ["Total Cholesterol / HDL Ratio","","Lab-verified target"]
+  ]},
+  {match:/thyroid|tft|thyroid profile/i, params:[
+    ["T3 Total","ng/mL","0.8–2.0"],["T4 Total","µg/dL","5.0–12.0"],
+    ["TSH","µIU/mL","0.4–4.0"]
+  ]},
+  {match:/hba1c|glycated hemoglobin/i, params:[
+    ["HbA1c","%","Normal <5.7; Prediabetes 5.7–6.4; Diabetes ≥6.5"],
+    ["Estimated Average Glucose (eAG)","mg/dL","Calculated from HbA1c"]
+  ]},
+  {match:/fasting blood sugar|\bfbs\b|blood glucose fasting/i, params:[["Fasting Blood Glucose","mg/dL","70–99"]]},
+  {match:/post.?prandial|\bppbs\b/i, params:[["Post Prandial Blood Glucose","mg/dL","Usually <140 at 2 hours; lab verify"]]},
+  {match:/random blood sugar|\brbs\b|random glucose/i, params:[["Random Blood Glucose","mg/dL","Interpret with clinical context"]]},
+  {match:/electrolyte/i, params:[
+    ["Sodium","mmol/L","135–145"],["Potassium","mmol/L","3.5–5.1"],["Chloride","mmol/L","98–107"],["Bicarbonate","mmol/L","22–29"]
+  ]},
+  {match:/uric acid/i, params:[["Serum Uric Acid","mg/dL","Male 3.5–7.2; Female 2.6–6.0"]]},
+  {match:/calcium/i, params:[["Total Calcium","mg/dL","8.5–10.5"]]},
+  {match:/phosphorus|phosphate/i, params:[["Serum Phosphorus","mg/dL","2.5–4.5"]]},
+  {match:/magnesium/i, params:[["Serum Magnesium","mg/dL","1.7–2.2"]]},
+  {match:/amylase/i, params:[["Serum Amylase","U/L","30–110"]]},
+  {match:/lipase/i, params:[["Serum Lipase","U/L","13–60"]]},
+  {match:/esr|erythrocyte sedimentation/i, params:[["ESR (1st hour)","mm/hr","Male 0–15; Female 0–20"]]},
+  {match:/crp|c.?reactive protein/i, params:[["CRP","mg/L","<5"]]},
+  {match:/vitamin d|25.?oh/i, params:[["25-OH Vitamin D","ng/mL","Lab-verified; commonly sufficient ≥30"]]},
+  {match:/vitamin b.?12|cobalamin/i, params:[["Vitamin B12","pg/mL","200–900"]]},
+  {match:/iron profile|iron studies/i, params:[
+    ["Serum Iron","µg/dL","Male 65–175; Female 50–170"],["TIBC","µg/dL","250–450"],
+    ["Transferrin Saturation","%","20–50"],["Ferritin","ng/mL","Sex-specific; lab verify"]
+  ]},
+  {match:/urine.*(r\/m|routine|microscopy)|urine routine|urine examination/i, params:[
+    ["Colour","",""],["Appearance","",""],["Specific Gravity","","1.005–1.030"],["pH","","4.5–8.0"],
+    ["Protein","","Negative"],["Glucose","","Negative"],["Ketone","","Negative"],["Bilirubin","","Negative"],
+    ["Urobilinogen","","Normal"],["Blood","","Negative"],["Pus Cells","/HPF","0–5"],
+    ["RBC","/HPF","0–2"],["Epithelial Cells","/HPF","0–5"],["Casts","/LPF","Nil / occasional hyaline"],
+    ["Crystals","","Absent / occasional"],["Bacteria","","Absent"]
+  ]},
+  {match:/stool.*(r\/m|routine)|stool examination/i, params:[
+    ["Colour","",""],["Consistency","",""],["Mucus","","Absent"],["Blood","","Absent"],
+    ["Ova","","Not seen"],["Cyst","","Not seen"],["RBC","/HPF","Absent"],["Pus Cells","/HPF","0–2"]
+  ]},
+  {match:/coagulation|prothrombin|\\bpt\\b|\\binr\\b/i, params:[
+    ["Prothrombin Time (PT)","seconds","Lab control dependent"],["INR","","0.8–1.2 (not on anticoagulants)"]
+  ]},
+  {match:/aptt|activated partial thromboplastin/i, params:[["APTT","seconds","25–35; reagent dependent"]]},
+  {match:/blood group|abo|rh typing/i, params:[["ABO Group","","A / B / AB / O"],["Rh Type","","Positive / Negative"]]},
+  {match:/widal/i, params:[
+    ["S. typhi O titre","","Report titre"],["S. typhi H titre","","Report titre"],
+    ["S. paratyphi AH titre","","Report titre"],["S. paratyphi BH titre","","Report titre"]
+  ]},
+  {match:/dengue/i, params:[
+    ["Dengue NS1 Antigen","","Positive / Negative"],["Dengue IgM Antibody","","Positive / Negative"],["Dengue IgG Antibody","","Positive / Negative"]
+  ]},
+  {match:/malaria|mp smear/i, params:[["Malaria Parasite","","Not seen / species and stage"]]},
+  {match:/hiv/i, params:[["HIV 1/2 Screening","","Reactive / Non-reactive"]]},
+  {match:/hbsag|hepatitis b/i, params:[["HBsAg","","Reactive / Non-reactive"]]},
+  {match:/hcv|hepatitis c/i, params:[["Anti-HCV","","Reactive / Non-reactive"]]},
+  {match:/pregnancy|urine pregnancy|\\bbeta.?hcg\\b/i, params:[["hCG","","Positive / Negative or quantitative value"]]},
+  {match:/semen/i, params:[
+    ["Volume","mL","Lab/WHO edition dependent"],["Liquefaction Time","minutes","≤60"],
+    ["pH","","7.2–8.0"],["Sperm Concentration","million/mL","≥16 (WHO 2021 lower reference)"],
+    ["Total Motility","%","≥42 (WHO 2021 lower reference)"],["Progressive Motility","%","≥30 (WHO 2021 lower reference)"],
+    ["Normal Morphology","%","≥4 (strict criteria; lab verify)"]
+  ]}
+];
+
+function getTestParameterTemplate(testName){
+  const found=TEST_PARAMETER_TEMPLATES.find(t=>t.match.test(String(testName||"")));
+  if(found) return found.params.map(p=>({parameter:p[0],unit:p[1],range:p[2]}));
+  return [{parameter:String(testName||"Test Result"),unit:"",range:""}];
+}
+function parseResultParameterArray(raw){
+  let value=raw;
+  try{
+    for(let i=0;i<3 && typeof value==="string";i++) value=JSON.parse(value);
+  }catch(_){return null;}
+  if(Array.isArray(value)) return value;
+  if(value && Array.isArray(value.parameters)) return value.parameters;
+  if(value && Array.isArray(value.results)) return value.results;
+  if(value && typeof value==="object" && (value.parameter || value.test_parameter || value.name)){
+    return [{parameter:value.parameter||value.test_parameter||value.name,result:value.result??value.value??"",unit:value.unit||"",range:value.range||value.reference_range||""}];
+  }
+  return null;
+}
+
 /* RESULT ENTRY AND REPORT */
 
 function populateResultOrders(){
@@ -1016,26 +1149,49 @@ async function loadResultEntry(){
   resultEntries=data || [];
   const items=orderItems.filter(i=>i.test_order_id===orderId);
   if(!items.length){ box.textContent="इस ऑर्डर में कोई टेस्ट नहीं मिला।"; return; }
-  const cbcParameters=["Hemoglobin (Hb)","RBC Count","PCV / Hematocrit","MCV","MCH","MCHC","RDW-CV","Total WBC Count","Neutrophils","Lymphocytes","Monocytes","Eosinophils","Basophils","Platelet Count","MPV"];
+
   box.innerHTML=items.map(item=>{
     const r=resultEntries.find(x=>x.test_order_item_id===item.id) || {};
-    const isCBC=/\bcbc\b/i.test(item.test_name);
-    if(isCBC){
-      let saved=[]; try{saved=JSON.parse(r.result_value || "[]"); if(!Array.isArray(saved))saved=[];}catch(_){saved=[];}
-      const savedMap=Object.fromEntries(saved.map(x=>[x.parameter,x]));
-      return `<div class="card" style="margin:10px 0;padding:12px"><b>${esc(item.test_name)}</b> <span class="pill">₹${money(item.price_paise)}</span>
-      <p class="muted">CBC के प्रत्येक पैरामीटर का Result, Unit और Reference Range भरें।</p><div class="scroll"><table><thead><tr><th>Parameter</th><th>Result</th><th>Unit</th><th>Reference Range</th></tr></thead><tbody>
-      ${cbcParameters.map((name,i)=>{const v=savedMap[name]||{};return `<tr><td>${esc(name)}</td><td><input class="cbc-result" data-item="${esc(item.id)}" data-param="${esc(name)}" value="${esc(v.result||"")}" aria-label="${esc(name)} Result"></td><td><input class="cbc-unit" data-item="${esc(item.id)}" data-param="${esc(name)}" value="${esc(v.unit||"")}" aria-label="${esc(name)} Unit"></td><td><input class="cbc-range" data-item="${esc(item.id)}" data-param="${esc(name)}" value="${esc(v.range||"")}" aria-label="${esc(name)} Reference Range"></td></tr>`;}).join("")}
-      </tbody></table></div><div class="field" style="margin-top:8px"><label>Remarks</label><input class="cbc-remarks" data-item="${esc(item.id)}" value="${esc(r.remarks||"")}" placeholder="वैकल्पिक टिप्पणी"></div></div>`;
-    }
-    return `<div class="card" style="margin:10px 0;padding:12px">
-      <b>${esc(item.test_name)}</b> <span class="pill">₹${money(item.price_paise)}</span>
-      <div class="grid" style="margin-top:8px">
-        <div class="field"><label>Result</label><input class="res-value" data-item="${esc(item.id)}" value="${esc(r.result_value || "")}" placeholder="Result value"></div>
-        <div class="field"><label>Unit</label><input class="res-unit" data-item="${esc(item.id)}" value="${esc(r.unit || "")}" placeholder="जैसे mg/dL"></div>
-        <div class="field"><label>Reference Range</label><input class="res-range" data-item="${esc(item.id)}" value="${esc(r.reference_range || tests.find(t=>t.test_name===item.test_name)?.reference_range || "")}" placeholder="Test Catalog से Reference Range आएगी"></div>
-        <div class="field"><label>Remarks</label><input class="res-remarks" data-item="${esc(item.id)}" value="${esc(r.remarks || "")}" placeholder="वैकल्पिक टिप्पणी"></div>
-      </div></div>`;
+    const saved=parseResultParameterArray(r.result_value);
+    const defaults=getTestParameterTemplate(item.test_name);
+    const savedMap=Object.fromEntries((saved||[]).map(x=>[String(x.parameter||"").toLowerCase(),x]));
+    const params=defaults.map(d=>{
+      const old=savedMap[d.parameter.toLowerCase()] || {};
+      return {
+        parameter:d.parameter,
+        result:old.result ?? old.value ?? "",
+        unit:old.unit || d.unit || "",
+        range:old.range || old.reference_range || d.range || ""
+      };
+    });
+    // Keep any previously saved custom parameters too; do not discard historical data.
+    (saved||[]).forEach(x=>{
+      if(!params.some(p=>p.parameter.toLowerCase()===String(x.parameter||"").toLowerCase())){
+        params.push({parameter:x.parameter||"Additional Parameter",result:x.result??x.value??"",unit:x.unit||"",range:x.range||x.reference_range||""});
+      }
+    });
+    const remarks=r.remarks||"";
+    return `<section class="result-entry-card" style="margin:10px 0;padding:14px;border:1px solid var(--line);border-radius:13px;background:#fff">
+      <div class="result-entry-head" style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <strong style="font-size:17px">${esc(item.test_name)}</strong><span class="pill">₹${money(item.price_paise)}</span>
+      </div>
+      <p class="muted">हर पैरामीटर का Result अलग भरें। Reference Range और Unit लैब द्वारा जाँचकर बदले जा सकते हैं।</p>
+      <div class="parameter-list" style="display:grid;grid-template-columns:1fr;gap:9px">
+        ${params.map((v,index)=>`<div class="parameter-card" style="border:1px solid #dfe9e3;border-radius:11px;padding:11px;background:#fbfdfb">
+          <div style="font-weight:750;margin-bottom:8px">${esc(v.parameter)}</div>
+          <div class="field">
+            <label>Result</label>
+            <input class="cbc-result" data-item="${esc(item.id)}" data-param="${esc(v.parameter)}" value="${esc(v.result)}" placeholder="Result लिखें" inputmode="decimal" style="font-size:18px;min-height:48px">
+          </div>
+          <div class="grid" style="grid-template-columns:1fr 1.4fr;gap:8px">
+            <div class="field"><label>Unit</label><input class="cbc-unit" data-item="${esc(item.id)}" data-param="${esc(v.parameter)}" value="${esc(v.unit)}" placeholder="Unit"></div>
+            <div class="field"><label>Reference Range</label><input class="cbc-range" data-item="${esc(item.id)}" data-param="${esc(v.parameter)}" value="${esc(v.range)}" placeholder="Reference Range"></div>
+          </div>
+        </div>`).join("")}
+      </div>
+      <div class="field" style="margin-top:10px"><label>Remarks (वैकल्पिक)</label><input class="cbc-remarks" data-item="${esc(item.id)}" value="${esc(remarks)}" placeholder="टिप्पणी"></div>
+      <p class="muted">Default ranges केवल शुरुआती मान हैं। अंतिम उपयोग से पहले लैब के उपकरण, विधि, आयु और लिंग के अनुसार अधिकृत प्रोफेशनल सत्यापित करें।</p>
+    </section>`;
   }).join("");
   $("resultMsg").textContent="";
 }
@@ -1055,7 +1211,7 @@ async function saveResultEntries(){
       return {parameter:param,result:input.value.trim(),unit:get("cbc-unit"),range:get("cbc-range")};
     }).filter(x=>x.result||x.unit||x.range);
     const remarks=document.querySelector(`.cbc-remarks[data-item="${CSS.escape(itemId)}"]`)?.value.trim()||"";
-    if(parameters.length||remarks) rows.push({lab_id:window.currentLabId,test_order_id:orderId,patient_id:order.patient_id,test_order_item_id:itemId,result_value:JSON.stringify(parameters),unit:"CBC Panel",reference_range:"",remarks,entered_by:user?.id||null,status:"draft",updated_at:new Date().toISOString()});
+    if(parameters.length||remarks) rows.push({lab_id:window.currentLabId,test_order_id:orderId,patient_id:order.patient_id,test_order_item_id:itemId,result_value:JSON.stringify(parameters),unit:"Panel",reference_range:"",remarks,entered_by:user?.id||null,status:"draft",updated_at:new Date().toISOString()});
   });
   const values=[...document.querySelectorAll(".res-value")];
   values.forEach(input=>{
@@ -1131,10 +1287,9 @@ async function printLabReport(){
 
     const reportSections=items.map(item=>{
       const r=results.find(x=>x.test_order_item_id===item.id);
-      if(/\bcbc\b/i.test(item.test_name) || (r?.result_value||"").trim().startsWith("[")){
-        let params=[];
-        try{params=JSON.parse(r?.result_value||"[]");if(!Array.isArray(params))params=[];}catch(_){params=[];}
-        return renderParamTable(item.test_name,params,r?.remarks);
+      const savedParams=parseResultParameterArray(r?.result_value);
+      if(savedParams){
+        return renderParamTable(item.test_name,savedParams,r?.remarks);
       }
       const range=r?.reference_range || tests.find(t=>t.test_name===item.test_name)?.reference_range || "";
       const flag=getFlag(r?.result_value,range);
@@ -1548,88 +1703,72 @@ esc(err.message)+'</div>';
 
 });
 
-/* EXISTING PATIENT SEARCH */
-
+/* EXISTING PATIENT SEARCH — VIEW HISTORY ONLY */
 $("searchExistingPatient").onclick=async()=>{
+  const result=$("existingPatientResult");
+  const search=$("existingPatientSearch").value.trim();
+  if(!search){ result.textContent="मोबाइल या Patient ID डालें।"; return; }
+  result.textContent="मरीज का रिकॉर्ड खोज रहे हैं...";
+  try{
+    let query=client.from("patients")
+      .select("id,patient_code,patient_name,phone,age_years,sex,created_at")
+      .eq("lab_id",window.currentLabId);
+    if(search.toUpperCase().startsWith("P")) query=query.eq("patient_code",search);
+    else query=query.eq("phone",search);
+    const {data:patient,error}=await query.maybeSingle();
+    if(error) throw error;
+    if(!patient){ result.innerHTML='<div class="muted">इस मोबाइल नंबर या Patient ID का रिकॉर्ड नहीं मिला।</div>'; return; }
 
-const result=$("existingPatientResult");
-const search=$("existingPatientSearch").value.trim();
+    const {data:patientOrders,error:orderError}=await client.from("test_orders")
+      .select("id,order_code,status,created_at")
+      .eq("lab_id",window.currentLabId)
+      .eq("patient_id",patient.id)
+      .order("created_at",{ascending:false});
+    if(orderError) throw orderError;
 
-if(!search){
-result.textContent="मोबाइल या Patient ID डालें।";
-return;
-}
+    const orderIds=(patientOrders||[]).map(o=>o.id);
+    let items=[];
+    if(orderIds.length){
+      const {data:itemData,error:itemError}=await client.from("test_order_items")
+        .select("id,test_order_id,test_name")
+        .eq("lab_id",window.currentLabId)
+        .in("test_order_id",orderIds);
+      if(itemError) throw itemError;
+      items=itemData||[];
+    }
 
-result.textContent="मरीज खोज रहे हैं...";
-
-try{
-
-let query=client
-.from("patients")
-.select("id,patient_code,patient_name,phone")
-.eq("lab_id",window.currentLabId);
-
-if(search.toUpperCase().startsWith("P")){
-query=query.eq("patient_code",search);
-}else{
-query=query.eq("phone",search);
-}
-
-const {data:patient,error}=await query.maybeSingle();
-
-if(error) throw error;
-
-if(!patient){
-result.textContent="मरीज नहीं मिला।";
-return;
-}
-
-result.innerHTML=`
-<div class="success">
-<b>${esc(patient.patient_name)}</b>
-<br>Patient ID: ${esc(patient.patient_code)}
-<br>Mobile: ${esc(patient.phone || "-")}
-<br>
-<button class="btn" type="button" id="existingPatientOrder">
-नया जाँच ऑर्डर बनाएँ
-</button>
-</div>`;
-
-$("existingPatientOrder").onclick=async()=>{
-
-const selected=[
-...$("patientTests").querySelectorAll("input:checked")
-].map(x=>x.value);
-
-if(!selected.length){
-alert("पहले जाँच चुनें।");
-return;
-}
-
-try{
-
-await createOrder(patient.id,selected);
-
-result.innerHTML=
-'<div class="success">नया जाँच ऑर्डर सेव हुआ।</div>';
-
-await loadData();
-
-}catch(err){
-
-result.innerHTML=
-'<div class="danger">त्रुटि: '+esc(err.message)+'</div>';
-
-}
-
-};
-
-}catch(err){
-
-result.textContent="खोजने में त्रुटि: "+err.message;
-
-}
-
+    result.innerHTML=`
+      <div class="success">
+        <b>${esc(patient.patient_name)}</b>
+        <br>Patient ID: ${esc(patient.patient_code)}
+        <br>Mobile: ${esc(patient.phone||"-")}
+        <br>Age / Sex: ${esc(patient.age_years??"-")} / ${esc(patient.sex||"-")}
+      </div>
+      <h3 style="margin-top:14px">पुराने जाँच रिकॉर्ड</h3>
+      ${patientOrders?.length ? patientOrders.map(o=>{
+        const names=items.filter(x=>x.test_order_id===o.id).map(x=>x.test_name);
+        return `<div class="card" style="margin:8px 0;padding:12px">
+          <b>Order: ${esc(o.order_code)}</b>
+          <div class="muted">तारीख: ${esc(o.created_at?new Date(o.created_at).toLocaleString("en-IN"):"-")}</div>
+          <div>जाँच: ${esc(names.join(", ")||"जाँच सूची उपलब्ध नहीं")}</div>
+          <div class="muted">Status: ${esc(o.status||"-")}</div>
+          <button class="btn openPatientRecord" type="button" data-order="${esc(o.id)}" style="margin-top:10px">रिकॉर्ड खोलें / Print करें</button>
+        </div>`;
+      }).join("") : '<p class="muted">इस मरीज का अभी कोई जाँच ऑर्डर रिकॉर्ड नहीं मिला।</p>'}
+    `;
+    result.querySelectorAll(".openPatientRecord").forEach(button=>{
+      button.addEventListener("click",()=>{
+        const orderId=button.dataset.order;
+        const orderSelect=$("resultOrder");
+        if(!orderSelect){ alert("Result & Report सेक्शन उपलब्ध नहीं है।"); return; }
+        orderSelect.value=orderId;
+        // printLabReport opens its print-preview window immediately on this click.
+        printLabReport();
+      });
+    });
+  }catch(err){
+    result.innerHTML='<div class="danger">रिकॉर्ड खोजने में त्रुटि: '+esc(err.message)+'</div>';
+  }
 };
 
 /* CREATE BILL */
