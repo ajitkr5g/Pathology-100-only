@@ -1261,6 +1261,34 @@ async function saveResultEntries(){
   await loadResultEntry();
 }
 
+// Print में numeric result को reference range से compare करके abnormal result bold करें.
+// Qualitative ranges (Negative/Not seen आदि) को auto-flag नहीं किया जाता.
+function isResultOutsideRange(resultValue, referenceRange, patientSex){
+  const raw=String(resultValue??"").trim();
+  let range=String(referenceRange??"").trim();
+  if(!raw || !range) return false;
+  const vm=raw.replace(/,/g,"").match(/[-+]?\d*\.?\d+/);
+  if(!vm) return false;
+  const value=Number(vm[0]); if(!Number.isFinite(value)) return false;
+  const sex=String(patientSex||"").toLowerCase();
+  if(/male|female/i.test(range)){
+    const female=/female|\bf\b/.test(sex), male=/male|\bm\b/.test(sex)&&!female;
+    if(!female&&!male) return false;
+    const re=female?/female\s*:?\s*([<>]=?\s*[-+]?\d[\d,.]*(?:\s*[-–—]\s*[-+]?\d[\d,.]*)?)/i:/male\s*:?\s*([<>]=?\s*[-+]?\d[\d,.]*(?:\s*[-–—]\s*[-+]?\d[\d,.]*)?)/i;
+    const m=range.match(re); if(!m) return false; range=m[1];
+  }
+  range=range.replace(/,/g,"");
+  const cm=range.match(/(?:^|\s)(<=|>=|<|>)\s*([-+]?\d*\.?\d+)/);
+  if(cm){const limit=Number(cm[2]); if(cm[1]==="<")return value>=limit; if(cm[1]==="<=")return value>limit; if(cm[1]===">")return value<=limit; if(cm[1]===">=")return value<limit;}
+  const nums=[...range.matchAll(/[-+]?\d*\.?\d+/g)].map(m=>Number(m[0])).filter(Number.isFinite);
+  if(nums.length>=2){const lo=Math.min(nums[0],nums[1]),hi=Math.max(nums[0],nums[1]);return value<lo||value>hi;}
+  return false;
+}
+function printResultCell(value,range,sex){
+  const abnormal=isResultOutsideRange(value,range,sex);
+  return `<td class="${abnormal?"abnormal-result":""}">${esc(value||"")}</td>`;
+}
+
 async function printLabReport(){
   const orderId=$("resultOrder").value;
   if(!orderId){ alert("पहले जाँच ऑर्डर चुनें।"); return; }
@@ -1292,15 +1320,16 @@ async function printLabReport(){
       if(isPanelTest(item.test_name)){
         let params=[];try{params=JSON.parse(r?.result_value||"[]");if(!Array.isArray(params))params=[];}catch(_){params=[];}
         const testDefault=tests.find(t=>t.test_name===item.test_name)||{};
-        const detail=params.length?`<table><thead><tr><th colspan="4">${esc(item.test_name)}</th></tr><tr><th>Parameter</th><th>Result</th><th>Unit</th><th>Reference Range</th></tr></thead><tbody>${params.map(x=>{const d=testDefault.cbc_parameter_ranges?.[x.parameter]||{};const starter=(getTestParameterConfig(item.test_name)||[]).find(z=>z.parameter===x.parameter)||{};return `<tr><td>${esc(x.parameter||"")}</td><td>${esc(x.result||"")}</td><td>${esc(x.unit||d.unit||testDefault.unit||starter.unit||"")}</td><td>${esc(x.range||d.range||testDefault.reference_range||starter.range||"")}</td></tr>`;}).join("")}</tbody></table>`:`<p>${esc(item.test_name)} — Pending</p>`;
+        const detail=params.length?`<table><thead><tr><th colspan="4">${esc(item.test_name)}</th></tr><tr><th>Parameter</th><th>Result</th><th>Unit</th><th>Reference Range</th></tr></thead><tbody>${params.map(x=>{const d=testDefault.cbc_parameter_ranges?.[x.parameter]||{};const starter=(getTestParameterConfig(item.test_name)||[]).find(z=>z.parameter===x.parameter)||{};const range=x.range||d.range||testDefault.reference_range||starter.range||"";return `<tr><td>${esc(x.parameter||"")}</td>${printResultCell(x.result,range,patient.sex)}<td>${esc(x.unit||d.unit||testDefault.unit||starter.unit||"")}</td><td>${esc(range)}</td></tr>`;}).join("")}</tbody></table>`:`<p>${esc(item.test_name)} — Pending</p>`;
         return `<tr><td colspan="5">${detail}<p><b>Remarks:</b> ${esc(r?.remarks||"")}</p></td></tr>`;
       }
       const testDefault=tests.find(t=>t.test_name===item.test_name) || {};
-      return `<tr><td>${esc(item.test_name)}</td><td>${esc(r?.result_value || "Pending")}</td><td>${esc(r?.unit || testDefault.unit || "")}</td><td>${esc(r?.reference_range || testDefault.reference_range || "")}</td><td>${esc(r?.remarks || "")}</td></tr>`;
+      const singleRange=r?.reference_range || testDefault.reference_range || "";
+      return `<tr><td>${esc(item.test_name)}</td>${printResultCell(r?.result_value || "Pending",singleRange,patient.sex)}<td>${esc(r?.unit || testDefault.unit || "")}</td><td>${esc(singleRange)}</td><td>${esc(r?.remarks || "")}</td></tr>`;
     }).join("");
 
     w.document.open();
-    w.document.write(`<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab Report ${esc(order.order_code)}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#183129}h2,h3{text-align:center}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{border:1px solid #999;padding:9px;text-align:left}.warning{border:2px solid #a33b32;padding:10px;text-align:center;font-weight:bold;margin:16px 0}.muted{color:#555;font-size:12px}@media print{button{display:none}}</style></head><body><h2>${esc(window.currentLabName || "Laboratory")}</h2><h3>LABORATORY TEST REPORT</h3><div class="warning">DRAFT — NOT MEDICALLY VERIFIED — अधिकृत समीक्षा के बाद ही जारी करें</div><p><b>Patient:</b> ${esc(patient.name)} &nbsp; <b>Patient ID:</b> ${esc(patient.id)}</p><p><b>Age / Sex:</b> ${esc(patient.age || "-")} / ${esc(patient.sex || "-")} &nbsp; <b>Mobile:</b> ${esc(patient.mobile || "-")}</p><p><b>Order:</b> ${esc(order.order_code)} &nbsp; <b>Date:</b> ${esc(new Date().toLocaleDateString("en-IN"))}</p><table><thead><tr><th>Test</th><th>Result</th><th>Unit</th><th>Reference Range</th><th>Remarks</th></tr></thead><tbody>${rows}</tbody></table><p style="margin-top:42px">Technician: ____________________ &nbsp;&nbsp; Authorized Reviewer: ____________________</p><p>Signature / Stamp: __________________________________</p><p class="muted">यह रिपोर्ट ड्राफ्ट है। अधिकृत लैब प्रोफेशनल की जाँच और अनुमोदन के बिना इसे अंतिम मेडिकल रिपोर्ट न मानें।</p><script>window.onload=()=>window.print();<\/script></body></html>`);
+    w.document.write(`<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab Report ${esc(order.order_code)}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#183129}h2,h3{text-align:center}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{border:1px solid #999;padding:9px;text-align:left}.abnormal-result{font-weight:900;color:#000!important;background:#eee!important}.warning{border:2px solid #a33b32;padding:10px;text-align:center;font-weight:bold;margin:16px 0}.muted{color:#555;font-size:12px}@media print{button{display:none}}</style></head><body><h2>${esc(window.currentLabName || "Laboratory")}</h2><h3>LABORATORY TEST REPORT</h3><div class="warning">DRAFT — NOT MEDICALLY VERIFIED — अधिकृत समीक्षा के बाद ही जारी करें</div><p><b>Patient:</b> ${esc(patient.name)} &nbsp; <b>Patient ID:</b> ${esc(patient.id)}</p><p><b>Age / Sex:</b> ${esc(patient.age || "-")} / ${esc(patient.sex || "-")} &nbsp; <b>Mobile:</b> ${esc(patient.mobile || "-")}</p><p><b>Order:</b> ${esc(order.order_code)} &nbsp; <b>Date:</b> ${esc(new Date().toLocaleDateString("en-IN"))}</p><table><thead><tr><th>Test</th><th>Result</th><th>Unit</th><th>Reference Range</th><th>Remarks</th></tr></thead><tbody>${rows}</tbody></table><p style="margin-top:42px">Technician: ____________________ &nbsp;&nbsp; Authorized Reviewer: ____________________</p><p>Signature / Stamp: __________________________________</p><p class="muted">यह रिपोर्ट ड्राफ्ट है। अधिकृत लैब प्रोफेशनल की जाँच और अनुमोदन के बिना इसे अंतिम मेडिकल रिपोर्ट न मानें।</p><script>window.onload=()=>window.print();<\/script></body></html>`);
     w.document.close();
   }catch(err){
     w.document.open();
