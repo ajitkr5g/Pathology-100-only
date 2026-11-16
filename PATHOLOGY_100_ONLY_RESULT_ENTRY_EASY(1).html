@@ -1,0 +1,1974 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#075c45">
+<title>PATHOLOGY 100 ONLY</title>
+
+<style>
+:root{
+--g:#087f5b;
+--dark:#075c45;
+--bg:#f2f7f4;
+--line:#d9e6df;
+--ink:#183129;
+--muted:#64756d;
+--red:#a33b32;
+}
+*{box-sizing:border-box}
+body{
+margin:0;background:var(--bg);color:var(--ink);
+font:15px system-ui,sans-serif
+}
+header{
+background:var(--dark);color:white;padding:15px;
+display:flex;justify-content:space-between;
+align-items:center;gap:12px;flex-wrap:wrap
+}
+.logo{font-size:20px;font-weight:850}
+.logo small{display:block;font-size:11px}
+main{max-width:1180px;margin:18px auto;padding:0 13px}
+.notice{
+background:#fff5d9;border:1px solid #edd99a;
+padding:12px;border-radius:12px;margin-bottom:14px
+}
+.nav{display:flex;gap:7px;flex-wrap:wrap;overflow:visible;margin-bottom:12px;position:relative}
+.tab{
+white-space:nowrap;padding:10px 13px;border-radius:9px;
+border:1px solid var(--line);background:white;color:var(--ink)
+}
+.tab.active,.btn{background:var(--g);color:white;border-color:var(--g)}
+.tab[data-p="results"]{border:2px solid var(--g);font-weight:800}
+@media(max-width:520px){.nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.tab{white-space:normal;padding:10px 8px;font-size:13px}}
+.page.hidden{display:none}
+.card{
+background:white;border:1px solid var(--line);
+border-radius:14px;padding:16px;margin-bottom:14px
+}
+h2{font-size:19px;margin:0 0 13px}
+h3{font-size:15px;margin:16px 0 8px}
+.muted{color:var(--muted);font-size:13px}
+.grid{
+display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+gap:11px
+}
+.stat{
+padding:14px;border:1px solid var(--line);
+border-radius:12px;background:#f7fbf8
+}
+.stat b{display:block;color:var(--g);font-size:25px}
+.field{margin-bottom:11px}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+input,select,textarea{
+width:100%;padding:10px;border:1px solid #cbd9d1;
+border-radius:9px;background:white;color:var(--ink);font:inherit
+}
+button{cursor:pointer;font:inherit}
+.btn,.plain{border-radius:9px;padding:10px 14px;border:1px solid var(--line)}
+button:disabled{opacity:.65;cursor:not-allowed}
+.plain{background:white;color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{background:#e3f3eb;color:var(--dark);border-radius:20px;padding:4px 9px;font-size:12px}
+.danger{color:var(--red)}
+.success{
+background:#e9f7ef;border:1px solid #c7e8d3;
+padding:10px;border-radius:9px;margin-top:10px
+}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:9px}
+th{color:var(--muted)}
+.scroll{overflow:auto}
+.checks{
+display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px
+}
+.checks label{
+display:flex;gap:8px;align-items:center;
+background:#f7faf8;padding:8px;border-radius:8px
+}
+.checks input{width:auto}
+footer{text-align:center;color:var(--muted);padding:20px;font-size:12px}
+/* Result Entry: mobile-first, field-by-field layout */
+.result-entry-card{margin:10px 0;padding:14px;border:1px solid var(--line);border-radius:13px;background:#fff}
+.result-entry-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.result-entry-head strong{font-size:16px}
+.result-entry-help{font-size:12px;color:var(--muted);margin:0 0 12px}
+.parameter-list{display:grid;grid-template-columns:1fr;gap:9px}
+.parameter-card{border:1px solid #dfe9e3;border-radius:11px;padding:11px;background:#fbfdfb}
+.parameter-name{font-weight:750;font-size:14px;margin-bottom:8px}
+.result-main label{font-weight:700;color:var(--dark)}
+.result-main input{font-size:18px;font-weight:650;min-height:48px;border:1.5px solid #9bbbad}
+.result-meta{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:8px}
+.result-meta .field{margin:0;min-width:0}
+.result-meta input{min-height:42px;font-size:14px}
+.result-remarks{margin-top:11px}
+.result-save-hint{font-size:12px;color:var(--muted);margin:8px 0 0}
+@media(min-width:700px){.parameter-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:380px){.result-meta{grid-template-columns:1fr}}
+
+#login-box,#password-reset-box{
+max-width:420px;margin:45px auto;padding:25px;
+background:white;border:1px solid #ddd;border-radius:15px
+}
+#login-box input,#password-reset-box input{padding:13px;margin:8px 0}
+#register-box{display:none;max-width:560px;margin:24px auto;padding:22px;background:#fff;border:1px solid #ddd;border-radius:15px}
+#register-box input{padding:11px;margin:4px 0}
+.auth-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.auth-actions button{flex:1}
+
+@media(max-width:520px){
+header{align-items:flex-start}
+.card{padding:13px}
+table{font-size:12px}
+}
+</style>
+</head>
+
+<body>
+
+<div id="login-box">
+<h2>⚕ PATHOLOGY 100 ONLY</h2>
+<h3>Lab Login</h3>
+<form id="login-form">
+<div class="field">
+<label>Username</label>
+<input id="login-username" required placeholder="अपना Username">
+</div>
+<div class="field">
+<label>Password</label>
+<input id="login-password" type="password" required placeholder="अपना Password">
+</div>
+<button class="btn" style="width:100%">Login</button>
+</form>
+<p id="login-message"></p>
+<div class="auth-actions">
+<button class="btn" style="width:100%;font-weight:700" type="button" id="showRegisterBtn">＋ नई Lab Register करें</button>
+</div>
+<p class="muted" style="text-align:center;margin-top:8px">पहली बार उपयोग कर रहे हैं? ऊपर Registration बटन दबाएँ।</p>
+</div>
+
+<div id="register-box">
+<h2>नई Lab Registration</h2>
+<p class="muted">रजिस्ट्रेशन के बाद Trial शुरू होगा।</p>
+<form id="register-form">
+<div class="grid">
+<div class="field"><label>लैब का नाम *</label><input id="reg-lab-name" required maxlength="120"></div>
+<div class="field"><label>मोबाइल *</label><input id="reg-phone" type="tel" inputmode="tel" required maxlength="20"></div>
+<div class="field"><label>ईमेल *</label><input id="reg-email" type="email" required maxlength="254"></div>
+<div class="field"><label>Username *</label><input id="reg-username" required minlength="4" maxlength="40" pattern="[a-z0-9._-]+" autocomplete="username"><small class="muted">4–40 अक्षर: a-z, 0-9, dot, _ या -</small></div>
+<div class="field"><label>Password *</label><input id="reg-password" type="password" required minlength="8" maxlength="1024" autocomplete="new-password"></div>
+<div class="field"><label>शहर *</label><input id="reg-city" required maxlength="100"></div>
+<div class="field"><label>राज्य *</label><input id="reg-state" required maxlength="100"></div>
+<div class="field"><label>पता</label><input id="reg-address" maxlength="250"></div>
+</div>
+<div class="auth-actions">
+<button class="btn" id="registerSubmitBtn" type="submit">Lab Register करें</button>
+<button class="plain" type="button" id="backToLoginBtn">Login पर वापस जाएँ</button>
+</div>
+</form>
+<p id="register-message" aria-live="polite"></p>
+</div>
+
+<div id="password-reset-box" style="display:none">
+<h2>नया Password बनाएँ</h2>
+<form id="reset-form">
+<label>नया Password</label>
+<input id="new-password" type="password" minlength="8" required>
+<label>Confirm Password</label>
+<input id="confirm-password" type="password" minlength="8" required>
+<button class="btn">Save Password</button>
+</form>
+<p id="reset-message"></p>
+</div>
+
+<header style="display:none">
+<div class="logo">
+⚕ PATHOLOGY 100 ONLY
+<small>ALL INDIA LAB MANAGEMENT</small>
+</div>
+<div class="row">
+<span class="pill">₹100 / लैब / महीना</span>
+<button class="plain" id="logoutBtn">Logout</button>
+</div>
+</header>
+
+<main style="display:none">
+
+<div class="notice">
+<b>महत्वपूर्ण:</b>
+यह सिस्टम Supabase से जुड़ा है।
+मरीजों का वास्तविक मेडिकल डेटा केवल सुरक्षित और अधिकृत
+प्रोडक्शन व्यवस्था में इस्तेमाल करें। मेडिकल रिपोर्ट अधिकृत
+लैब प्रोफेशनल की जाँच के बाद ही जारी होनी चाहिए।
+</div>
+
+<nav class="nav">
+<button class="tab active" data-p="dash">Dashboard</button>
+<button class="tab" data-p="lab">Lab Profile</button>
+<button class="tab" data-p="patient">मरीज रजिस्ट्रेशन</button>
+<button class="tab" data-p="billing">Billing</button>
+<button class="tab" data-p="catalog">जाँच सूची</button>
+<button class="tab" data-p="culture">Culture</button>
+<button class="tab" data-p="results">Result & Report</button>
+<button class="tab" data-p="history">Records</button>
+<button class="tab" data-p="admin">Super Admin</button>
+</nav>
+
+<section id="dash" class="page">
+<div class="card">
+<h2>Lab Dashboard</h2>
+<div class="grid">
+<div class="stat"><b id="nPatients">0</b>कुल मरीज</div>
+<div class="stat"><b id="nBills">0</b>कुल बिल</div>
+<div class="stat" id="leadStat" style="display:none"><b id="nLeads">0</b>नई Leads</div>
+<div class="stat"><b id="nOrders">0</b>कुल जाँच ऑर्डर</div>
+</div>
+<h3>आज का काम</h3>
+<p class="muted">
+Patient Registration → Test Selection → Billing →
+Result Verification → Report
+</p>
+<p id="dashboardMsg" class="muted"></p>
+</div>
+</section>
+
+<section id="lab" class="page hidden">
+<div class="card">
+<h2>Lab Profile</h2>
+<form id="labForm">
+<div class="grid">
+<div class="field">
+<label>लैब का नाम</label>
+<input id="labName">
+</div>
+<div class="field">
+<label>मोबाइल</label>
+<input id="labPhone">
+</div>
+<div class="field">
+<label>शहर</label>
+<input id="labCity">
+</div>
+<div class="field">
+<label>राज्य</label>
+<input id="labState">
+</div>
+<div class="field">
+<label>पता</label>
+<input id="labAddress">
+</div>
+</div>
+<button class="btn">डेमो प्रोफाइल सेव करें</button>
+</form>
+<div id="labMsg"></div>
+<p class="muted">यह प्रोफाइल फॉर्म अभी डेमो है। इसे स्थायी Supabase सेविंग से जोड़ना बाकी है।</p>
+</div>
+</section>
+
+<section id="patient" class="page hidden">
+<div class="card">
+<h2>मरीज रजिस्ट्रेशन</h2>
+
+<h3>पुराना मरीज खोजें</h3>
+<div class="field">
+<input id="existingPatientSearch" placeholder="मोबाइल या Patient ID">
+</div>
+<button class="btn" id="searchExistingPatient" type="button">मरीज खोजें</button>
+<div id="existingPatientResult"></div>
+
+<hr>
+
+<form id="patientForm">
+<div class="grid">
+<div class="field">
+<label>मरीज का नाम *</label>
+<input id="pName" required>
+</div>
+<div class="field">
+<label>उम्र</label>
+<input id="pAge" type="number" min="0" max="120">
+</div>
+<div class="field">
+<label>लिंग</label>
+<select id="pGender">
+<option value="">चुनें</option>
+<option>पुरुष</option>
+<option>महिला</option>
+<option>अन्य</option>
+</select>
+</div>
+<div class="field">
+<label>मोबाइल</label>
+<input id="pMobile" inputmode="tel">
+</div>
+<div class="field">
+<label>डॉक्टर का नाम</label>
+<input id="pDoctor">
+</div>
+<div class="field">
+<label>सैंपल तारीख</label>
+<input id="pDate" type="date">
+</div>
+</div>
+
+<h3>जाँच चुनें</h3>
+<div class="checks" id="patientTests"></div>
+
+<div class="field" style="margin-top:12px">
+<label>नोट</label>
+<textarea id="pNote" rows="2"></textarea>
+</div>
+
+<button class="btn">Patient ID बनाएँ और सेव करें</button>
+</form>
+<div id="patientMsg"></div>
+</div>
+</section>
+
+<section id="billing" class="page hidden">
+<div class="card">
+<h2>Billing System</h2>
+
+<div class="field">
+<label>मरीज चुनें</label>
+<select id="billPatient">
+<option value="">मरीज चुनें</option>
+</select>
+</div>
+
+<div class="field">
+<label>जाँच ऑर्डर चुनें</label>
+<select id="billOrder">
+<option value="">पहले मरीज चुनें</option>
+</select>
+</div>
+
+<div class="field">
+<label>टेस्ट की कुल कीमत (₹)</label>
+<input id="billSubtotal" type="number" readonly value="0">
+</div>
+
+<div class="field">
+<label>छूट (₹)</label>
+<input id="billDiscount" type="number" min="0" value="0">
+</div>
+
+<div class="field">
+<label>कुल बिल (₹)</label>
+<input id="billTotal" type="number" readonly value="0">
+</div>
+
+<div class="field">
+<label>प्राप्त राशि (₹)</label>
+<input id="billPaid" type="number" min="0" value="0">
+</div>
+
+<div class="field">
+<label>भुगतान माध्यम</label>
+<select id="billMethod">
+<option value="">चुनें</option>
+<option value="cash">Cash</option>
+<option value="upi">UPI</option>
+<option value="card">Card</option>
+<option value="other">Other</option>
+</select>
+</div>
+
+<button class="btn" id="makeBill" type="button">बिल सेव करें</button>
+<div id="billMsg"></div>
+</div>
+
+<div class="card">
+<h2>Bill Records</h2>
+<div class="scroll">
+<table>
+<thead>
+<tr>
+<th>Bill Number</th>
+<th>मरीज</th>
+<th>कुल</th>
+<th>जमा</th>
+<th>बाकी</th>
+<th>स्थिति</th>
+</tr>
+</thead>
+<tbody id="billRows">
+<tr><td colspan="6">अभी बिल नहीं।</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+<section id="catalog" class="page hidden">
+<div class="card">
+<h2>Lab Test Catalog</h2>
+<p class="muted">हर जाँच की Reference Range यहाँ एक बार सेट करें। Result Entry और Print Report में यही अपने-आप दिखाई देगी।</p>
+<div class="checks" id="catalogList"></div>
+</div>
+</section>
+
+<section id="culture" class="page hidden">
+<div class="card">
+<h2>Culture & Sensitivity</h2>
+<div class="grid">
+<div class="field">
+<label>Sample</label>
+<select id="cSample">
+<option>Urine</option>
+<option>Blood</option>
+<option>Pus</option>
+<option>Sputum</option>
+<option>Stool</option>
+<option>Throat/Swab</option>
+</select>
+</div>
+<div class="field">
+<label>Status</label>
+<select id="cStatus">
+<option>Pending</option>
+<option>No growth detected</option>
+<option>Growth detected</option>
+<option>Final review required</option>
+</select>
+</div>
+<div class="field">
+<label>Organism</label>
+<input id="cOrganism">
+</div>
+</div>
+<p class="muted">
+यह फॉर्म अभी डिजाइन स्तर पर है। परिणाम केवल अधिकृत
+माइक्रोबायोलॉजी स्टाफ द्वारा सत्यापित किए जाने चाहिए।
+</p>
+</div>
+</section>
+
+<section id="results" class="page hidden">
+<div class="card">
+<h2>Test Result Entry</h2>
+<p class="muted">यहाँ केवल इसी लॉगिन वाली लैब के मरीज और जाँच ऑर्डर दिखेंगे। हर लैब अपने परिणाम अलग सेव करेगी।</p>
+<div class="field">
+<label>मरीज का जाँच ऑर्डर चुनें</label>
+<select id="resultOrder"><option value="">जाँच ऑर्डर चुनें</option></select>
+</div>
+<div id="resultPatientInfo" class="muted"></div>
+<div id="resultEntryRows"></div>
+<div class="row" style="margin-top:12px">
+<button class="btn" id="saveResults" type="button">Result सेव करें</button>
+<button class="plain" id="printReport" type="button">Report देखें / Print करें</button>
+</div>
+<div id="resultMsg"></div>
+<p class="muted">रिपोर्ट अभी DRAFT रहेगी। मरीज को जारी करने से पहले अधिकृत लैब प्रोफेशनल द्वारा परिणाम सत्यापित करना आवश्यक है।</p>
+</div>
+</section>
+
+<section id="history" class="page hidden">
+<div class="card">
+<h2>Patient Records</h2>
+<div class="scroll">
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>नाम</th>
+<th>मोबाइल</th>
+<th>जाँच</th>
+<th>तारीख</th>
+</tr>
+</thead>
+<tbody id="patientRows">
+<tr><td colspan="5">कोई रिकॉर्ड नहीं।</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+
+
+<section id="admin" class="page hidden">
+<div class="card">
+<h2>Super Admin Dashboard — सभी Labs</h2>
+<p class="muted">यह पैनल केवल platform_admins में दर्ज Super Admin को दिखेगा। Lab का संचालन और Patient डेटा अलग-अलग Lab RLS के अधीन रहेगा।</p>
+<div class="grid">
+<div class="stat"><b id="saLabsCount">—</b>कुल Labs</div>
+<div class="stat"><b id="saActiveLabs">—</b>Active Labs</div>
+<div class="stat"><b id="saTrialLabs">—</b>Trial Labs</div>
+<div class="stat"><b id="saMembersCount">—</b>Lab Memberships</div>
+<div class="stat"><b id="saLeadsCount">—</b>Lead Enquiries</div>
+</div>
+<div class="row" style="margin-top:12px">
+<button class="btn" id="refreshAdmin" type="button">Dashboard Refresh</button>
+<span id="adminDataMsg" class="muted" aria-live="polite"></span>
+</div>
+</div>
+
+<div class="card">
+<h2>सभी Labs की जानकारी</h2>
+<div class="scroll">
+<table><thead><tr><th>Lab Name</th><th>शहर / राज्य</th><th>मोबाइल</th><th>Status</th><th>Subscription</th><th>Expiry</th><th>Created</th></tr></thead>
+<tbody id="saLabsRows"><tr><td colspan="7">डेटा लोड होने की प्रतीक्षा...</td></tr></tbody></table>
+</div>
+</div>
+
+<div class="card">
+<h2>Lab Users / Memberships</h2>
+<div class="scroll">
+<table><thead><tr><th>Lab</th><th>User ID</th><th>Role</th><th>Joined</th></tr></thead>
+<tbody id="saMembersRows"><tr><td colspan="4">डेटा लोड होने की प्रतीक्षा...</td></tr></tbody></table>
+</div>
+<p class="muted">यहाँ login credentials या passwords नहीं दिखाए जाते।</p>
+</div>
+
+<div class="card">
+<h2>Lead Enquiry Management</h2>
+<p class="muted">नई लैब की Enquiry और Lead Inbox केवल Super Admin सेक्शन में उपलब्ध है।</p>
+<div>
+<h2>नई Lab Enquiry</h2>
+<form id="leadForm">
+<div class="grid">
+<div class="field"><label>लैब का नाम *</label><input id="lLabName" required></div>
+<div class="field"><label>मालिक / संपर्क व्यक्ति *</label><input id="lOwnerName" required></div>
+<div class="field"><label>मोबाइल *</label><input id="lMobile" type="tel" inputmode="tel" required></div>
+<div class="field"><label>ईमेल</label><input id="lEmail" type="email"></div>
+<div class="field"><label>शहर *</label><input id="lCity" required></div>
+<div class="field"><label>राज्य *</label><input id="lState" required></div>
+<div class="field"><label>पता</label><input id="lAddress"></div>
+</div>
+<div class="field"><label>Enquiry विवरण</label><textarea id="lMessage" rows="2"></textarea></div>
+<label><input id="lConsent" type="checkbox" required style="width:auto"> Enquiry के लिए संपर्क करने की सहमति</label>
+<button class="btn" style="margin-top:12px" type="submit">Enquiry दर्ज करें</button>
+</form>
+<div id="leadMsg"></div>
+</div>
+
+<div class="card">
+<h2>Lead Inbox — सभी Labs</h2>
+<div class="scroll">
+<table>
+<thead><tr><th>समय</th><th>लैब</th><th>संपर्क व्यक्ति</th><th>मोबाइल</th><th>शहर / राज्य</th><th>Status</th><th>Update</th></tr></thead>
+<tbody id="leadRows"><tr><td colspan="7">Lead लोड हो रही हैं...</td></tr></tbody>
+</table>
+</div>
+<button class="plain" id="refreshLeads" type="button">Refresh Leads</button>
+<p class="muted">यह सूची Supabase Database से लोड होती है और केवल अधिकृत Super Admin के लिए है।</p>
+</div>
+
+</div>
+</section>
+
+</main>
+
+<footer style="display:none">
+PATHOLOGY 100 ONLY · Lab Management
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+/* SUPABASE CONNECTION */
+
+const SUPABASE_URL =
+"https://qixlreovljbageufgzvc.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_8-aSOKszXeh9GdybSR0j7w_cjSL4KFJ";
+
+const client = window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_KEY
+);
+
+/* GLOBAL DATA */
+
+const $ = id => document.getElementById(id);
+
+let patients = [];
+let bills = [];
+let leads = [];
+let tests = [];
+let testPrices = {};
+let orders = [];
+let orderItems = [];
+let resultEntries = [];
+
+window.currentLabId = null;
+window.currentLabRole = null;
+window.isPlatformAdmin = false;
+
+function esc(s){
+return String(s ?? "").replace(/[&<>"']/g,c=>({
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#39;"
+}[c]));
+}
+
+function money(paise){
+return (Number(paise || 0)/100).toFixed(2);
+}
+
+function showApp(){
+$("login-box").style.display="none";
+$("password-reset-box").style.display="none";
+document.querySelector("header").style.display="";
+document.querySelector("main").style.display="";
+document.querySelector("footer").style.display="";
+}
+
+function showLogin(){
+$("register-box").style.display="none";
+$("login-box").style.display="block";
+document.querySelector("header").style.display="none";
+document.querySelector("main").style.display="none";
+document.querySelector("footer").style.display="none";
+}
+
+/* NAVIGATION */
+
+document.querySelectorAll(".tab").forEach(btn=>{
+btn.onclick=()=>{
+if(btn.dataset.p==="admin" && !window.isPlatformAdmin){
+  alert("यह सेक्शन केवल Super Admin के लिए है।");
+  return;
+}
+document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+document.querySelectorAll(".page").forEach(x=>x.classList.add("hidden"));
+btn.classList.add("active");
+$(btn.dataset.p).classList.remove("hidden");
+if(btn.dataset.p==="admin" && window.isPlatformAdmin){
+  loadSuperAdminData();
+  loadLeads();
+}
+};
+});
+
+/* LAB REGISTRATION — existing register-lab Edge Function */
+$("showRegisterBtn").addEventListener("click",()=>{
+  $("login-box").style.display="none";
+  $("register-box").style.display="block";
+  $("register-message").textContent="";
+});
+$("backToLoginBtn").addEventListener("click",()=>{
+  $("register-box").style.display="none";
+  $("login-box").style.display="block";
+  $("register-message").textContent="";
+});
+$("register-form").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const msg=$("register-message");
+  const submit=$("registerSubmitBtn");
+  submit.disabled=true;
+  msg.textContent="Lab Registration हो रहा है...";
+  try{
+    const payload={
+      lab_name:$("reg-lab-name").value.trim(),
+      phone:$("reg-phone").value.trim(),
+      email:$("reg-email").value.trim().toLowerCase(),
+      username:$("reg-username").value.trim().toLowerCase(),
+      password:$("reg-password").value,
+      city:$("reg-city").value.trim(),
+      state:$("reg-state").value.trim(),
+      address:$("reg-address").value.trim()
+    };
+    if(payload.username==="ajitk5381"){
+      throw new Error("यह Username सुरक्षित Super Admin/Lab Login के लिए आरक्षित है।");
+    }
+    const {data,error}=await client.functions.invoke("register-lab",{body:payload});
+    if(error || !data || !data.success){
+      throw new Error(data?.error || error?.message || "Registration असफल।");
+    }
+    if(!data.access_token || !data.refresh_token){
+      throw new Error("Registration बना, लेकिन सुरक्षित Login session नहीं मिला। कृपया Admin से जाँच करवाएँ।");
+    }
+    const {error:sessionError}=await client.auth.setSession({
+      access_token:data.access_token,
+      refresh_token:data.refresh_token
+    });
+    if(sessionError) throw sessionError;
+    msg.textContent=data.message || "Registration सफल।";
+    await initializeApp();
+  }catch(err){
+    msg.textContent="Registration Error: "+err.message;
+  }finally{
+    submit.disabled=false;
+  }
+});
+
+/* LOGIN */
+
+$("login-form").addEventListener("submit",async e=>{
+e.preventDefault();
+
+const msg=$("login-message");
+msg.textContent="Login हो रहा है...";
+
+try{
+const username=$("login-username").value.trim();
+const password=$("login-password").value;
+
+const {data,error}=await client.functions.invoke(
+"username-login",
+{body:{username,password}}
+);
+
+if(error || !data || !data.success){
+throw new Error(data?.error || error?.message || "Login असफल");
+}
+
+const {error:sessionError}=await client.auth.setSession({
+access_token:data.access_token,
+refresh_token:data.refresh_token
+});
+
+if(sessionError) throw sessionError;
+
+await initializeApp();
+
+msg.textContent="Login सफल!";
+
+}catch(err){
+msg.textContent="Login Error: "+err.message;
+}
+});
+
+/* LOAD MEMBERSHIP AND APP */
+
+async function initializeApp(){
+
+const {data:{user},error:userError}=await client.auth.getUser();
+
+if(userError || !user) throw new Error("User नहीं मिला");
+
+// Platform admin identity is verified by the protected platform_admins table.
+window.isPlatformAdmin = false;
+const {data:adminRecord,error:adminCheckError}=await client
+  .from("platform_admins")
+  .select("user_id")
+  .eq("user_id",user.id)
+  .maybeSingle();
+if(adminCheckError) console.error("Platform admin check failed:",adminCheckError.message);
+if(!adminCheckError && adminRecord) window.isPlatformAdmin = true;
+
+// A platform admin may also have a lab membership, but it is not required
+// merely to access the Super Admin area.
+const {data:membership,error:memberError}=await client
+.from("lab_memberships")
+.select("lab_id,role")
+.eq("user_id",user.id)
+.maybeSingle();
+if(memberError) throw memberError;
+if(!membership && !window.isPlatformAdmin) throw new Error("Lab Membership नहीं मिली");
+
+window.currentLabId=membership?.lab_id || null;
+window.currentLabRole=membership?.role || null;
+
+const adminTab=document.querySelector('.tab[data-p="admin"]');
+const leadStat=$("leadStat");
+if(adminTab) adminTab.style.display=window.isPlatformAdmin ? "" : "none";
+if(leadStat) leadStat.style.display=window.isPlatformAdmin ? "" : "none";
+$("admin").style.display=window.isPlatformAdmin ? "" : "none";
+
+showApp();
+if(window.currentLabId){
+  const {data:labProfile}=await client.from("labs").select("lab_name")
+    .eq("id",window.currentLabId).maybeSingle();
+  window.currentLabName=labProfile?.lab_name || "Laboratory";
+  await loadTests();
+  await loadData();
+} else {
+  // Keep the complete application navigation visible for the Super Admin.
+  // Lab-specific save/load actions still require a valid lab_memberships row.
+  document.querySelectorAll('.tab').forEach(btn=>btn.style.display="");
+  document.querySelectorAll('.page').forEach(page=>page.classList.add("hidden"));
+  $("admin").classList.remove("hidden");
+  document.querySelectorAll('.tab').forEach(btn=>btn.classList.remove("active"));
+  adminTab?.classList.add("active");
+  const notice=document.createElement("p");
+  notice.className="muted";
+  notice.textContent="Super Admin account में Lab membership अभी लिंक नहीं है। सभी विकल्प दिखाई देंगे; मरीज, जाँच और Billing का डेटा चलाने के लिए इस खाते की Lab membership जुड़ी होनी चाहिए।";
+  const adminPage=$("admin");
+  if(adminPage && !document.getElementById("adminMembershipNotice")){
+    notice.id="adminMembershipNotice";
+    adminPage.prepend(notice);
+  }
+}
+if(window.isPlatformAdmin){
+  await loadSuperAdminData();
+  await loadLeads();
+}
+}
+
+/* LOAD TESTS */
+
+async function loadTests(){
+
+const {data,error}=await client
+.from("lab_tests")
+.select("id,test_name,price_paise,reference_range")
+.eq("lab_id",window.currentLabId)
+.eq("is_active",true)
+.order("test_name");
+
+if(error) throw error;
+
+tests=data || [];
+
+testPrices=Object.fromEntries(
+tests.map(t=>[t.test_name,Number(t.price_paise || 0)])
+);
+
+$("patientTests").innerHTML="";
+$("catalogList").innerHTML="";
+
+tests.forEach(t=>{
+
+const price=money(t.price_paise);
+
+const label=document.createElement("label");
+label.innerHTML=
+'<input type="checkbox" value="'+esc(t.test_name)+'"> '+
+esc(t.test_name)+' — ₹'+price;
+
+$("patientTests").append(label);
+if(window.currentLabRole==="lab_admin"){
+  const editBtn=document.createElement("button");
+  editBtn.type="button";
+  editBtn.textContent="कीमत सेट करें";
+  editBtn.style.marginLeft="10px";
+  editBtn.onclick=(event)=>{
+    event.preventDefault();
+    event.stopPropagation();
+    saveTestPrice(t.id);
+  };
+  label.appendChild(editBtn);
+}
+const item=document.createElement("div");
+item.className="card";
+item.style.margin="0";
+item.innerHTML=`<b>${esc(t.test_name)}</b><div class="muted">कीमत: ₹${price}</div>
+<div class="field" style="margin-top:9px"><label>Reference Range</label>
+<input class="catalog-range" data-test="${esc(t.id)}" value="${esc(t.reference_range || "")}" placeholder="जैसे Adult: 4.0–10.0 (unit सहित)"></div>
+<button class="btn" type="button" data-save-range="${esc(t.id)}">Reference Range सेव करें</button>`;
+item.querySelector("button").addEventListener("click",()=>saveTestReferenceRange(t.id));
+$("catalogList").append(item);
+
+});
+}
+async function saveTestReferenceRange(testId){
+  if(window.currentLabRole!=="lab_admin"){
+    alert("केवल Lab Owner Reference Range बदल सकता है");
+    return;
+  }
+  const input=document.querySelector(`.catalog-range[data-test="${CSS.escape(testId)}"]`);
+  if(!input)return;
+  const value=input.value.trim();
+  const {error}=await client.from("lab_tests")
+    .update({reference_range:value || null})
+    .eq("id",testId).eq("lab_id",window.currentLabId);
+  if(error){
+    alert("Reference Range सेव नहीं हुई: "+error.message);
+    return;
+  }
+  const test=tests.find(t=>t.id===testId);
+  if(test)test.reference_range=value;
+  alert("Reference Range सेव हो गई।");
+}
+
+async function saveTestPrice(testId){
+  if(window.currentLabRole!=="lab_admin"){
+    alert("केवल Lab Owner कीमत बदल सकता है");
+    return;
+  }
+
+  const test=tests.find(t=>t.id===testId);
+  if(!test)return;
+
+  const value=prompt(
+    "नई कीमत रुपये में डालें:",
+    (Number(test.price_paise)/100).toFixed(2)
+  );
+
+  if(value===null)return;
+
+  const rupees=Number(value);
+
+  if(!Number.isFinite(rupees)||rupees<0){
+    alert("सही कीमत डालें");
+    return;
+  }
+
+  const {error}=await client
+    .from("lab_tests")
+    .update({price_paise:Math.round(rupees*100)})
+    .eq("id",testId)
+    .eq("lab_id",window.currentLabId);
+
+  if(error){
+    alert("कीमत सेव नहीं हुई: "+error.message);
+    return;
+  }
+
+  alert("नई कीमत सफलतापूर्वक सेव हो गई");
+  await loadTests();
+}
+/* LOAD ALL DATA */
+
+async function loadData(){
+
+await loadPatients();
+await loadOrders();
+await loadBills();
+render();
+
+}
+
+/* LOAD PATIENTS */
+
+async function loadPatients(){
+
+const {data,error}=await client
+.from("patients")
+.select("id,patient_code,patient_name,phone,age_years,sex,created_at")
+.eq("lab_id",window.currentLabId)
+.order("created_at",{ascending:false});
+
+if(error) throw error;
+
+patients=(data || []).map(p=>({
+dbId:p.id,
+id:p.patient_code,
+name:p.patient_name,
+mobile:p.phone || "",
+age:p.age_years ?? "",
+sex:p.sex || "",
+tests:"",
+date:p.created_at ? p.created_at.slice(0,10) : ""
+}));
+
+}
+
+/* LOAD ORDERS AND TEST ITEMS */
+
+async function loadOrders(){
+
+const {data,error}=await client
+.from("test_orders")
+.select("id,patient_id,order_code,status,created_at")
+.eq("lab_id",window.currentLabId)
+.order("created_at",{ascending:false});
+
+if(error) throw error;
+
+orders=data || [];
+orderItems=[];
+
+if(orders.length){
+
+const ids=orders.map(o=>o.id);
+
+const {data:items,error:itemError}=await client
+.from("test_order_items")
+.select("id,test_order_id,test_name,price_paise")
+.eq("lab_id",window.currentLabId)
+.in("test_order_id",ids);
+
+if(itemError){
+$("dashboardMsg").textContent=
+"Test Items पढ़ने में समस्या: "+itemError.message;
+}else{
+orderItems=items || [];
+}
+
+}
+
+patients.forEach(p=>{
+const patientOrders=orders.filter(o=>o.patient_id===p.dbId);
+
+const names=patientOrders.flatMap(o=>
+orderItems
+.filter(i=>i.test_order_id===o.id)
+.map(i=>i.test_name)
+);
+
+p.tests=[...new Set(names)].join(", ");
+});
+
+populateResultOrders();
+
+}
+
+/* RESULT ENTRY AND REPORT */
+
+function populateResultOrders(){
+  const select=$("resultOrder");
+  if(!select) return;
+  const old=select.value;
+  select.innerHTML='<option value="">जाँच ऑर्डर चुनें</option>'+orders.map(o=>{
+    const patient=patients.find(p=>p.dbId===o.patient_id);
+    return `<option value="${esc(o.id)}">${esc(o.order_code)} — ${esc(patient?.name || "मरीज")}</option>`;
+  }).join("");
+  if(orders.some(o=>o.id===old)) select.value=old;
+  if(select.value) loadResultEntry();
+}
+
+async function loadResultEntry(){
+  const orderId=$("resultOrder").value;
+  const box=$("resultEntryRows");
+  const info=$("resultPatientInfo");
+  box.innerHTML=""; info.textContent="";
+  if(!orderId) return;
+  const order=orders.find(o=>o.id===orderId);
+  const patient=patients.find(p=>p.dbId===order?.patient_id);
+  if(!order || !patient) return;
+  info.textContent=`Patient: ${patient.name} | ID: ${patient.id} | Order: ${order.order_code}`;
+  const {data,error}=await client.from("test_results")
+    .select("id,test_order_item_id,result_value,unit,reference_range,remarks")
+    .eq("lab_id",window.currentLabId)
+    .eq("test_order_id",orderId);
+  if(error){ $("resultMsg").textContent="Result पढ़ने में त्रुटि: "+error.message; return; }
+  resultEntries=data || [];
+  const items=orderItems.filter(i=>i.test_order_id===orderId);
+  if(!items.length){ box.textContent="इस ऑर्डर में कोई टेस्ट नहीं मिला।"; return; }
+  const cbcParameters=["Hemoglobin (Hb)","RBC Count","PCV / Hematocrit","MCV","MCH","MCHC","RDW-CV","Total WBC Count","Neutrophils","Lymphocytes","Monocytes","Eosinophils","Basophils","Platelet Count","MPV"];
+  box.innerHTML=items.map(item=>{
+    const r=resultEntries.find(x=>x.test_order_item_id===item.id) || {};
+    const isCBC=/\bcbc\b/i.test(item.test_name);
+    if(isCBC){
+      let saved=[]; try{saved=JSON.parse(r.result_value || "[]"); if(!Array.isArray(saved))saved=[];}catch(_){saved=[];}
+      const savedMap=Object.fromEntries(saved.map(x=>[x.parameter,x]));
+      return `<section class="result-entry-card">
+        <div class="result-entry-head"><strong>${esc(item.test_name)}</strong><span class="pill">₹${money(item.price_paise)}</span></div>
+        <p class="result-entry-help">हर पैरामीटर में पहले Result भरें। Unit और Reference Range नीचे दिए गए हैं; जरूरत के अनुसार जाँचकर भरें।</p>
+        <div class="parameter-list">
+          ${cbcParameters.map(name=>{
+            const v=savedMap[name]||{};
+            return `<div class="parameter-card">
+              <div class="parameter-name">${esc(name)}</div>
+              <div class="field result-main">
+                <label>Result</label>
+                <input class="cbc-result" data-item="${esc(item.id)}" data-param="${esc(name)}" value="${esc(v.result||"")}" placeholder="Result लिखें" inputmode="decimal" aria-label="${esc(name)} Result">
+              </div>
+              <div class="result-meta">
+                <div class="field"><label>Unit</label><input class="cbc-unit" data-item="${esc(item.id)}" data-param="${esc(name)}" value="${esc(v.unit||"")}" placeholder="Unit"></div>
+                <div class="field"><label>Reference Range</label><input class="cbc-range" data-item="${esc(item.id)}" data-param="${esc(name)}" value="${esc(v.range||"")}" placeholder="Range"></div>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+        <div class="field result-remarks"><label>Remarks (वैकल्पिक)</label><input class="cbc-remarks" data-item="${esc(item.id)}" value="${esc(r.remarks||"")}" placeholder="टिप्पणी"></div>
+        <p class="result-save-hint">खाली पैरामीटर रिपोर्ट में खाली रहेंगे। भरने के बाद नीचे Save Results दबाएँ।</p>
+      </section>`;
+    }
+    const catalogRange=tests.find(t=>t.test_name===item.test_name)?.reference_range || "";
+    return `<section class="result-entry-card">
+      <div class="result-entry-head"><strong>${esc(item.test_name)}</strong><span class="pill">₹${money(item.price_paise)}</span></div>
+      <div class="field result-main">
+        <label>Result</label>
+        <input class="res-value" data-item="${esc(item.id)}" value="${esc(r.result_value || "")}" placeholder="Result लिखें" inputmode="decimal">
+      </div>
+      <div class="result-meta">
+        <div class="field"><label>Unit</label><input class="res-unit" data-item="${esc(item.id)}" value="${esc(r.unit || "")}" placeholder="जैसे mg/dL"></div>
+        <div class="field"><label>Reference Range</label><input class="res-range" data-item="${esc(item.id)}" value="${esc(r.reference_range || catalogRange)}" placeholder="Reference Range"></div>
+      </div>
+      <div class="field result-remarks"><label>Remarks (वैकल्पिक)</label><input class="res-remarks" data-item="${esc(item.id)}" value="${esc(r.remarks || "")}" placeholder="टिप्पणी"></div>
+    </section>`;
+  }).join("");
+  $("resultMsg").textContent="";
+}
+
+async function saveResultEntries(){
+  const orderId=$("resultOrder").value;
+  if(!orderId){ $("resultMsg").textContent="पहले जाँच ऑर्डर चुनें।"; return; }
+  const order=orders.find(o=>o.id===orderId);
+  if(!order) return;
+  const {data:{user}}=await client.auth.getUser();
+  const rows=[];
+  const cbcItemIds=[...new Set([...document.querySelectorAll(".cbc-result")].map(x=>x.dataset.item))];
+  cbcItemIds.forEach(itemId=>{
+    const parameters=[...document.querySelectorAll(`.cbc-result[data-item="${CSS.escape(itemId)}"]`)].map(input=>{
+      const param=input.dataset.param;
+      const get=cls=>document.querySelector(`.${cls}[data-item="${CSS.escape(itemId)}"][data-param="${CSS.escape(param)}"]`)?.value.trim()||"";
+      return {parameter:param,result:input.value.trim(),unit:get("cbc-unit"),range:get("cbc-range")};
+    }).filter(x=>x.result||x.unit||x.range);
+    const remarks=document.querySelector(`.cbc-remarks[data-item="${CSS.escape(itemId)}"]`)?.value.trim()||"";
+    if(parameters.length||remarks) rows.push({lab_id:window.currentLabId,test_order_id:orderId,patient_id:order.patient_id,test_order_item_id:itemId,result_value:JSON.stringify(parameters),unit:"CBC Panel",reference_range:"",remarks,entered_by:user?.id||null,status:"draft",updated_at:new Date().toISOString()});
+  });
+  const values=[...document.querySelectorAll(".res-value")];
+  values.forEach(input=>{
+    const itemId=input.dataset.item;
+    const get=(cls)=>document.querySelector(`.${cls}[data-item="${CSS.escape(itemId)}"]`)?.value.trim() || "";
+    const row={lab_id:window.currentLabId,test_order_id:orderId,patient_id:order.patient_id,
+      test_order_item_id:itemId,result_value:input.value.trim(),unit:get("res-unit"),
+      reference_range:get("res-range"),remarks:get("res-remarks"),entered_by:user?.id || null,
+      status:"draft",updated_at:new Date().toISOString()};
+    if(row.result_value||row.unit||row.reference_range||row.remarks)rows.push(row);
+  });
+  if(!rows.length){ $("resultMsg").textContent="कम से कम एक टेस्ट का Result भरें।"; return; }
+  $("resultMsg").textContent="Result सेव हो रहा है...";
+  const {error}=await client.from("test_results").upsert(rows,{onConflict:"test_order_item_id"});
+  if(error){ $("resultMsg").textContent="Result सेव नहीं हुआ: "+error.message; return; }
+  $("resultMsg").innerHTML='<div class="success">Result सफलतापूर्वक सेव हुआ। अब Report देखें / Print करें।</div>';
+  await loadResultEntry();
+}
+
+async function printLabReport(){
+  const orderId=$("resultOrder").value;
+  if(!orderId){ alert("पहले जाँच ऑर्डर चुनें।"); return; }
+
+  // Popup user click पर ही खोलें ताकि mobile browser इसे block न करे।
+  const w=window.open("","_blank");
+  if(!w){ alert("Report खोलने के लिए browser में Pop-ups allow करें।"); return; }
+  w.document.write("<p style='font-family:Arial;padding:20px'>रिपोर्ट तैयार हो रही है...</p>");
+
+  try{
+    const order=orders.find(o=>o.id===orderId);
+    const patient=patients.find(p=>p.dbId===order?.patient_id);
+    if(!order || !patient) throw new Error("मरीज या जाँच ऑर्डर नहीं मिला।");
+
+    const {data,error}=await client.from("test_results")
+      .select("test_order_item_id,result_value,unit,reference_range,remarks,status")
+      .eq("lab_id",window.currentLabId)
+      .eq("test_order_id",orderId);
+    if(error) throw error;
+
+    const results=data || [];
+    const items=orderItems.filter(i=>i.test_order_id===orderId);
+    if(!items.length) throw new Error("इस ऑर्डर में कोई टेस्ट नहीं मिला।");
+    if(!results.length) throw new Error("पहले कम से कम एक टेस्ट का Result सेव करें।");
+
+    // केवल स्पष्ट numeric range से H/L तय करें; अस्पष्ट/qualitative ranges को स्वतः flag न करें।
+    const getFlag=(value,range)=>{
+      const v=Number(String(value??"").replace(/,/g,"").trim());
+      if(!Number.isFinite(v) || !String(value??"").trim() || !range) return "";
+      const text=String(range);
+      const sex=String(patient.sex||"").toLowerCase();
+      let selected=text;
+      const sexMatch=text.match(/(?:male|female)[^;|]*/ig);
+      if(sexMatch && sexMatch.length){
+        const wanted=sex.includes("f") || sex.includes("महिला") ? "female" : "male";
+        selected=sexMatch.find(x=>x.toLowerCase().includes(wanted)) || text;
+      }
+      const m=selected.match(/(-?\d+(?:\.\d+)?)\s*(?:–|—|to|-)\s*(-?\d+(?:\.\d+)?)/i);
+      if(!m) return "";
+      const low=Number(m[1]), high=Number(m[2]);
+      if(v<low) return "L";
+      if(v>high) return "H";
+      return "";
+    };
+
+    const renderParamTable=(testName,params,remarks)=>{
+      const filled=params.filter(x=>x && (x.parameter||x.result||x.unit||x.range));
+      const body=filled.map(x=>{
+        const flag=getFlag(x.result,x.range);
+        return `<tr><td>${esc(x.parameter||"")}</td><td class="${flag?'abnormal':''}">${esc(x.result||"")}${flag?` <strong class="flag">${flag}</strong>`:""}</td><td>${esc(x.unit||"")}</td><td>${esc(x.range||"")}</td></tr>`;
+      }).join("");
+      return `<section class="test-block"><h4>${esc(testName)}</h4><table><thead><tr><th>Parameter</th><th>Result</th><th>Unit</th><th>Reference Range</th></tr></thead><tbody>${body || '<tr><td colspan="4">Result Pending</td></tr>'}</tbody></table><p class="remarks"><b>Remarks:</b> ${esc(remarks||"—")}</p></section>`;
+    };
+
+    const reportSections=items.map(item=>{
+      const r=results.find(x=>x.test_order_item_id===item.id);
+      if(/\bcbc\b/i.test(item.test_name) || (r?.result_value||"").trim().startsWith("[")){
+        let params=[];
+        try{params=JSON.parse(r?.result_value||"[]");if(!Array.isArray(params))params=[];}catch(_){params=[];}
+        return renderParamTable(item.test_name,params,r?.remarks);
+      }
+      const range=r?.reference_range || tests.find(t=>t.test_name===item.test_name)?.reference_range || "";
+      const flag=getFlag(r?.result_value,range);
+      const params=[{parameter:item.test_name,result:r?.result_value||"Pending",unit:r?.unit||"",range}];
+      return renderParamTable(item.test_name,params,r?.remarks);
+    }).join("");
+
+    w.document.open();
+    w.document.write(`<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab Report ${esc(order.order_code)}</title>
+<style>
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#172b25;margin:0;padding:18px;font-size:12px;line-height:1.35}
+.report{max-width:900px;margin:0 auto}.head{text-align:center;margin-bottom:12px}.head h2{font-size:20px;margin:0 0 5px;font-weight:800}.head h3{font-size:14px;margin:0;font-weight:700}
+.draft{border:1.5px solid #9b3e36;color:#762c27;text-align:center;padding:6px;font-weight:700;margin:12px 0}
+.patient{display:grid;grid-template-columns:1fr 1fr;gap:5px 18px;margin:10px 0 14px}.patient div{padding:2px 0}
+.test-block{border:1px solid #888;padding:8px;margin:10px 0;break-inside:avoid;page-break-inside:avoid}.test-block h4{font-size:13px;margin:0 0 6px;background:#f1f4f2;padding:5px}
+table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #999;padding:6px;text-align:left;overflow-wrap:anywhere}th{background:#f5f6f5;font-weight:700}td:nth-child(2){width:18%}.abnormal{font-weight:800;color:#111!important}.flag{font-weight:900;color:#111}.remarks{margin:7px 0 0}.sign{margin-top:24px;break-inside:avoid}.sign p{margin:8px 0}.foot{font-size:10px;color:#555;margin-top:14px;border-top:1px solid #ccc;padding-top:7px}
+@page{size:A4;margin:12mm}@media print{body{padding:0;font-size:11px}.test-block{break-inside:avoid;page-break-inside:avoid}.draft{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media(max-width:520px){body{padding:10px}.patient{grid-template-columns:1fr 1fr}th,td{padding:4px;font-size:10px}}
+</style></head><body><main class="report"><header class="head"><h2>${esc(window.currentLabName || "PATHOLOGY 100 ONLY")}</h2><h3>LABORATORY TEST REPORT</h3></header>
+<div class="draft">DRAFT — NOT MEDICALLY VERIFIED — अधिकृत समीक्षा के बाद ही जारी करें</div>
+<section class="patient"><div><b>Patient:</b> ${esc(patient.name)}</div><div><b>Patient ID:</b> ${esc(patient.id)}</div><div><b>Age / Sex:</b> ${esc(patient.age || "-")} / ${esc(patient.sex || "-")}</div><div><b>Mobile:</b> ${esc(patient.mobile || "-")}</div><div><b>Order:</b> ${esc(order.order_code)}</div><div><b>Date:</b> ${esc(new Date().toLocaleDateString("en-IN"))}</div></section>
+${reportSections}
+<section class="sign"><p>Technician: __________________________ &nbsp;&nbsp; Authorized Reviewer: __________________________</p><p>Signature / Stamp: _________________________________________________</p></section>
+<footer class="foot">यह रिपोर्ट ड्राफ्ट है। अधिकृत लैब प्रोफेशनल की जाँच और अनुमोदन के बिना इसे अंतिम मेडिकल रिपोर्ट न मानें। Abnormal परिणामों की पुष्टि अधिकृत विशेषज्ञ द्वारा की जानी चाहिए।</footer>
+</main><script>window.onload=()=>window.print();<\/script></body></html>`);
+    w.document.close();
+  }catch(err){
+    w.document.open();
+    w.document.write(`<p style="font-family:Arial;padding:20px;color:#a33b32">Report Error: ${esc(err.message)}</p>`);
+    w.document.close();
+    $("resultMsg").textContent="Report Error: "+err.message;
+  }
+}
+
+$("resultOrder").addEventListener("change",loadResultEntry);
+$("saveResults").addEventListener("click",saveResultEntries);
+$("printReport").addEventListener("click",printLabReport);
+
+/* LOAD BILLS */
+
+async function loadBills(){
+
+const {data,error}=await client
+.from("patient_bills")
+.select("id,test_order_id,bill_number,subtotal_paise,discount_paise,total_paise,paid_paise,due_paise,payment_status,payment_method,created_at")
+.eq("lab_id",window.currentLabId)
+.order("created_at",{ascending:false});
+
+if(error) throw error;
+
+bills=(data || []).map(b=>{
+
+const order=orders.find(o=>o.id===b.test_order_id);
+const patient=patients.find(p=>p.dbId===order?.patient_id);
+
+return {
+id:b.bill_number,
+orderId:b.test_order_id,
+patient:patient?.name || "मरीज",
+subtotal:b.subtotal_paise,
+discount:b.discount_paise,
+amount:b.total_paise,
+paid:b.paid_paise,
+due:b.due_paise,
+status:b.payment_status
+};
+
+});
+
+}
+
+function printBill(billId){
+  const bill=bills.find(b=>b.id===billId);
+
+  if(!bill){
+    alert("बिल नहीं मिला");
+    return;
+  }
+
+  const w=window.open("","_blank");
+
+  if(!w){
+    alert("Print popup allow करें");
+    return;
+  }
+
+  const today=new Date().toLocaleString("en-IN");
+
+  w.document.write(`
+    <!DOCTYPE html>
+    <html lang="hi">
+    <head>
+      <meta charset="UTF-8">
+      <title>Pathology Payment Receipt</title>
+      <style>
+        body{
+          font-family:Arial,sans-serif;
+          padding:25px;
+          color:#183129;
+        }
+        .header{
+          text-align:center;
+          border-bottom:2px solid #087f5b;
+          padding-bottom:12px;
+        }
+        h2{margin:5px}
+        .info{margin:20px 0;line-height:1.8}
+        table{
+          width:100%;
+          border-collapse:collapse;
+          margin-top:15px;
+        }
+        td,th{
+          border:1px solid #ccc;
+          padding:12px;
+          text-align:left;
+        }
+        .total{
+          font-weight:bold;
+          background:#e8f5ee;
+        }
+        .footer{
+          text-align:center;
+          margin-top:35px;
+        }
+        @media print{
+          button{display:none}
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h2>PATHOLOGY 100 ONLY</h2>
+        <h3>Payment Receipt</h3>
+      </div>
+
+      <div class="info">
+        <b>Bill No:</b> ${esc(bill.id)}<br>
+        <b>Patient Name:</b> ${esc(bill.patient)}<br>
+        <b>Date:</b> ${esc(today)}
+      </div>
+
+      <table>
+        <tr>
+          <td>Test Subtotal</td>
+          <td>₹${money(bill.subtotal)}</td>
+        </tr>
+        <tr>
+          <td>Discount</td>
+          <td>₹${money(bill.discount)}</td>
+        </tr>
+        <tr class="total">
+          <td>Total Bill</td>
+          <td>₹${money(bill.amount)}</td>
+        </tr>
+        <tr>
+          <td>Amount Paid</td>
+          <td>₹${money(bill.paid)}</td>
+        </tr>
+        <tr>
+          <td>Balance Due</td>
+          <td>₹${money(bill.due)}</td>
+        </tr>
+        <tr>
+          <td>Payment Status</td>
+          <td>${esc(bill.status)}</td>
+        </tr>
+      </table>
+
+      <div class="footer">
+        <p>Thank you for visiting!</p>
+        <p>PATHOLOGY 100 ONLY</p>
+      </div>
+
+      <script>
+        window.onload=function(){
+          window.print();
+        };
+      <\/script>
+    </body>
+    </html>
+  `);
+
+  w.document.close();
+}
+
+/* RENDER */
+
+function render(){
+
+$("nPatients").textContent=patients.length;
+$("nBills").textContent=bills.length;
+$("nLeads").textContent=leads.length;
+$("nOrders").textContent=orders.length;
+
+$("patientRows").innerHTML=patients.length
+?patients.map(p=>`
+<tr>
+<td>${esc(p.id)}</td>
+<td>${esc(p.name)}</td>
+<td>${esc(p.mobile)}</td>
+<td>${esc(p.tests)}</td>
+<td>${esc(p.date)}</td>
+</tr>`).join("")
+:'<tr><td colspan="5">कोई रिकॉर्ड नहीं।</td></tr>';
+
+$("billRows").innerHTML=bills.length
+?bills.map(b=>`
+<tr>
+<td>${esc(b.id)}</td>
+<td>${esc(b.patient)}</td>
+<td>₹${money(b.amount)}</td>
+<td>₹${money(b.paid)}</td>
+<td>₹${money(b.due)}</td>
+<td>${esc(b.status)}
+<button type="button" class="plain"
+onclick="printBill('${esc(b.id)}')">Print</button>
+</td>
+</tr>`).join("")
+:'<tr><td colspan="6">अभी बिल नहीं।</td></tr>';
+
+$("leadRows").innerHTML=leads.length
+?leads.map(l=>`
+<tr>
+<td>${esc(l.time)}</td>
+<td>${esc(l.name)}</td>
+<td>${esc(l.mobile)}</td>
+<td>${esc(l.place)}</td>
+</tr>`).join("")
+:'<tr><td colspan="4">अभी Lead नहीं।</td></tr>';
+
+updateBillPatients();
+
+}
+
+/* PATIENT DROPDOWN */
+
+function updateBillPatients(){
+
+const old=$("billPatient").value;
+
+$("billPatient").innerHTML=
+'<option value="">मरीज चुनें</option>'+
+patients.map(p=>
+`<option value="${esc(p.dbId)}">${esc(p.id)} — ${esc(p.name)}</option>`
+).join("");
+
+if(patients.some(p=>p.dbId===old)){
+$("billPatient").value=old;
+}
+
+updateBillOrders();
+
+}
+
+/* BILL ORDER DROPDOWN */
+
+function updateBillOrders(){
+
+const patientId=$("billPatient").value;
+
+const patientOrders=orders.filter(o=>
+o.patient_id===patientId
+);
+
+$("billOrder").innerHTML=
+'<option value="">जाँच ऑर्डर चुनें</option>'+
+patientOrders.map(o=>
+`<option value="${esc(o.id)}">${esc(o.order_code)}</option>`
+).join("");
+
+updateBillTotals();
+
+}
+
+/* BILL CALCULATION */
+
+function updateBillTotals(){
+
+const orderId=$("billOrder").value;
+
+const items=orderItems.filter(i=>
+i.test_order_id===orderId
+);
+
+const subtotal=items.reduce((sum,i)=>
+sum+Number(i.price_paise || 0),0);
+
+$("billSubtotal").value=money(subtotal);
+
+const discount=Math.round(
+Number($("billDiscount").value || 0)*100
+);
+
+const total=Math.max(0,subtotal-discount);
+
+$("billTotal").value=money(total);
+
+}
+
+/* BILL EVENTS */
+
+$("billPatient").addEventListener("change",updateBillOrders);
+$("billOrder").addEventListener("change",updateBillTotals);
+$("billDiscount").addEventListener("input",updateBillTotals);
+
+/* CREATE NEW PATIENT ORDER */
+
+async function createOrder(patientId,selected){
+
+const labId=window.currentLabId;
+
+const orderCode="O"+Date.now();
+
+const {data:order,error:orderError}=await client
+.from("test_orders")
+.insert({
+lab_id:labId,
+patient_id:patientId,
+order_code:orderCode,
+status:"registered"
+})
+.select("id,patient_id,order_code,status,created_at")
+.single();
+
+if(orderError) throw orderError;
+
+const items=selected.map(name=>({
+lab_id:labId,
+test_order_id:order.id,
+test_name:name,
+lab_test_id:tests.find(t=>t.test_name===name)?.id || null,
+price_paise:testPrices[name] || 0
+}));
+
+const {error:itemError}=await client
+.from("test_order_items")
+.insert(items);
+
+if(itemError){
+throw new Error(
+"ऑर्डर बना, लेकिन जाँच सूची सेव नहीं हुई: "+itemError.message
+);
+}
+
+return order;
+
+}
+
+/* PATIENT REGISTRATION */
+
+$("patientForm").addEventListener("submit",async e=>{
+
+e.preventDefault();
+
+const msg=$("patientMsg");
+const labId=window.currentLabId;
+
+if(!labId){
+msg.textContent="पहले Login करें।";
+return;
+}
+
+const selected=[
+...$("patientTests").querySelectorAll("input:checked")
+].map(x=>x.value);
+
+if(!selected.length){
+alert("कम से कम एक जाँच चुनें।");
+return;
+}
+
+msg.textContent="मरीज सेव हो रहा है...";
+
+try{
+
+const patientCode="P"+Date.now();
+
+const {data:patient,error}=await client
+.from("patients")
+.insert({
+lab_id:labId,
+patient_code:patientCode,
+patient_name:$("pName").value.trim(),
+age_years:$("pAge").value ? Number($("pAge").value) : null,
+sex:$("pGender").value || null,
+phone:$("pMobile").value.trim() || null
+})
+.select("id,patient_code,patient_name")
+.single();
+
+if(error) throw error;
+
+await createOrder(patient.id,selected);
+
+msg.innerHTML=
+'<div class="success">मरीज सेव हुआ। Patient ID: <b>'+
+esc(patient.patient_code)+'</b></div>';
+
+e.target.reset();
+
+await loadData();
+
+}catch(err){
+
+msg.innerHTML=
+'<div class="danger">सेव करने में त्रुटि: '+
+esc(err.message)+'</div>';
+
+}
+
+});
+
+/* EXISTING PATIENT SEARCH */
+
+$("searchExistingPatient").onclick=async()=>{
+
+const result=$("existingPatientResult");
+const search=$("existingPatientSearch").value.trim();
+
+if(!search){
+result.textContent="मोबाइल या Patient ID डालें।";
+return;
+}
+
+result.textContent="मरीज खोज रहे हैं...";
+
+try{
+
+let query=client
+.from("patients")
+.select("id,patient_code,patient_name,phone")
+.eq("lab_id",window.currentLabId);
+
+if(search.toUpperCase().startsWith("P")){
+query=query.eq("patient_code",search);
+}else{
+query=query.eq("phone",search);
+}
+
+const {data:patient,error}=await query.maybeSingle();
+
+if(error) throw error;
+
+if(!patient){
+result.textContent="मरीज नहीं मिला।";
+return;
+}
+
+result.innerHTML=`
+<div class="success">
+<b>${esc(patient.patient_name)}</b>
+<br>Patient ID: ${esc(patient.patient_code)}
+<br>Mobile: ${esc(patient.phone || "-")}
+<br>
+<button class="btn" type="button" id="existingPatientOrder">
+नया जाँच ऑर्डर बनाएँ
+</button>
+</div>`;
+
+$("existingPatientOrder").onclick=async()=>{
+
+const selected=[
+...$("patientTests").querySelectorAll("input:checked")
+].map(x=>x.value);
+
+if(!selected.length){
+alert("पहले जाँच चुनें।");
+return;
+}
+
+try{
+
+await createOrder(patient.id,selected);
+
+result.innerHTML=
+'<div class="success">नया जाँच ऑर्डर सेव हुआ।</div>';
+
+await loadData();
+
+}catch(err){
+
+result.innerHTML=
+'<div class="danger">त्रुटि: '+esc(err.message)+'</div>';
+
+}
+
+};
+
+}catch(err){
+
+result.textContent="खोजने में त्रुटि: "+err.message;
+
+}
+
+};
+
+/* CREATE BILL */
+
+$("makeBill").onclick=async()=>{
+
+const msg=$("billMsg");
+
+const orderId=$("billOrder").value;
+
+if(!orderId){
+msg.textContent="जाँच ऑर्डर चुनें।";
+return;
+}
+
+const existing=bills.some(b=>b.orderId===orderId);
+
+if(existing){
+msg.textContent="इस ऑर्डर का बिल पहले से बना है।";
+return;
+}
+
+const subtotal=Math.round(Number($("billSubtotal").value)*100);
+const discount=Math.round(Number($("billDiscount").value || 0)*100);
+const total=Math.max(0,subtotal-discount);
+const paid=Math.round(Number($("billPaid").value || 0)*100);
+
+if(discount<0 || discount>subtotal || paid<0 || paid>total){
+msg.textContent="छूट या प्राप्त राशि सही भरें।";
+return;
+}
+
+if(!$("billMethod").value){
+msg.textContent="भुगतान माध्यम चुनें।";
+return;
+}
+
+const status=paid===0?"unpaid":paid>=total?"paid":"partial";
+
+const billNumber="B"+Date.now();
+
+msg.textContent="बिल सेव हो रहा है...";
+
+try{
+
+const {error}=await client
+.from("patient_bills")
+.insert({
+lab_id:window.currentLabId,
+test_order_id:orderId,
+bill_number:billNumber,
+subtotal_paise:subtotal,
+discount_paise:discount,
+total_paise:total,
+paid_paise:paid,
+
+payment_status:status,
+payment_method:$("billMethod").value
+});
+
+
+if(error) throw error;
+
+msg.innerHTML=
+'<div class="success">बिल सेव हुआ: <b>'+
+esc(billNumber)+'</b></div>';
+
+$("billDiscount").value=0;
+$("billPaid").value=0;
+$("billMethod").value="";
+
+await loadBills();
+render();
+
+}catch(err){
+
+msg.innerHTML=
+'<div class="danger">Billing Error: '+
+esc(err.message)+'</div>';
+
+}
+
+};
+
+/* SUPER ADMIN OVERVIEW — RLS MUST AUTHORIZE THE CURRENT USER */
+async function loadSuperAdminData(){
+  if(!window.isPlatformAdmin) return;
+  const msg=$("adminDataMsg");
+  if(msg) msg.textContent="सभी Labs की जानकारी लोड हो रही है...";
+  const labsBody=$("saLabsRows");
+  const membersBody=$("saMembersRows");
+  try{
+    const [labsResult,membersResult,leadsResult]=await Promise.all([
+      client.from("labs").select("id,lab_name,phone,city,state,status,subscription_status,subscription_ends_at,created_at").order("created_at",{ascending:false}).limit(500),
+      client.from("lab_memberships").select("lab_id,user_id,role,created_at").order("created_at",{ascending:false}).limit(1000),
+      client.from("lead_enquiries").select("id").limit(1000)
+    ]);
+    if(labsResult.error) throw new Error("Labs: "+labsResult.error.message);
+    if(membersResult.error) throw new Error("Lab Users: "+membersResult.error.message);
+    if(leadsResult.error) throw new Error("Leads: "+leadsResult.error.message);
+    const labs=labsResult.data||[];
+    const members=membersResult.data||[];
+    const leadsCount=(leadsResult.data||[]).length;
+    const labNames=new Map(labs.map(l=>[l.id,l.lab_name]));
+    $("saLabsCount").textContent=labs.length;
+    $("saActiveLabs").textContent=labs.filter(l=>l.status==="active").length;
+    $("saTrialLabs").textContent=labs.filter(l=>l.subscription_status==="trial").length;
+    $("saMembersCount").textContent=members.length;
+    $("saLeadsCount").textContent=leadsCount;
+    if(labsBody) labsBody.innerHTML=labs.length?labs.map(l=>`<tr>
+      <td><b>${esc(l.lab_name||"—")}</b><br><small>${esc(l.id)}</small></td>
+      <td>${esc([l.city,l.state].filter(Boolean).join(", ")||"—")}</td>
+      <td>${esc(l.phone||"—")}</td>
+      <td>${esc(l.status||"—")}</td>
+      <td>${esc(l.subscription_status||"—")}</td>
+      <td>${esc(l.subscription_ends_at?new Date(l.subscription_ends_at).toLocaleDateString("hi-IN"):"—")}</td>
+      <td>${esc(l.created_at?new Date(l.created_at).toLocaleDateString("hi-IN"):"—")}</td>
+    </tr>`).join(""):'<tr><td colspan="7">अभी कोई Lab दर्ज नहीं है।</td></tr>';
+    if(membersBody) membersBody.innerHTML=members.length?members.map(m=>`<tr>
+      <td>${esc(labNames.get(m.lab_id)||m.lab_id)}</td><td><small>${esc(m.user_id)}</small></td>
+      <td>${esc(m.role)}</td><td>${esc(m.created_at?new Date(m.created_at).toLocaleDateString("hi-IN"):"—")}</td>
+    </tr>`).join(""):'<tr><td colspan="4">अभी कोई Membership नहीं है।</td></tr>';
+    if(msg) msg.textContent="Dashboard अपडेट हो गया। अधिकतम 500 Labs और 1000 Memberships दिखाए जा रहे हैं।";
+  }catch(err){
+    if(msg) msg.textContent="Dashboard डेटा नहीं लोड हुआ: "+err.message;
+    if(labsBody) labsBody.innerHTML='<tr><td colspan="7">डेटा लोड नहीं हुआ। ऊपर दिया संदेश देखें।</td></tr>';
+    if(membersBody) membersBody.innerHTML='<tr><td colspan="4">डेटा लोड नहीं हुआ।</td></tr>';
+  }
+}
+
+$("refreshAdmin")?.addEventListener("click",loadSuperAdminData);
+
+/* LEAD ENQUIRY — SUPABASE DATABASE */
+
+async function loadLeads(){
+  if(!window.isPlatformAdmin) return;
+  const body=$("leadRows");
+  if(body) body.innerHTML='<tr><td colspan="7">Lead लोड हो रही हैं...</td></tr>';
+  const {data,error}=await client.from("lead_enquiries")
+    .select("id,lab_name,owner_name,mobile,email,address,city,state,message,status,created_at")
+    .order("created_at",{ascending:false});
+  if(error){
+    if(body) body.innerHTML='<tr><td colspan="7">Lead लोड नहीं हुई: '+esc(error.message)+'</td></tr>';
+    console.error("Lead load error:",error.message);
+    return;
+  }
+  leads=data || [];
+  if(body){
+    body.innerHTML=leads.length ? leads.map(l=>`<tr>
+      <td>${esc(l.created_at ? new Date(l.created_at).toLocaleString("hi-IN") : "-")}</td>
+      <td>${esc(l.lab_name)}</td><td>${esc(l.owner_name)}</td><td>${esc(l.mobile)}</td>
+      <td>${esc([l.city,l.state].filter(Boolean).join(", "))}</td>
+      <td><select id="lead-status-${esc(l.id)}">
+        ${["New","Contacted","Demo","Converted","Rejected"].map(st=>`<option value="${st}" ${l.status===st?"selected":""}>${st}</option>`).join("")}
+      </select></td>
+      <td><button class="plain" type="button" onclick="updateLeadStatus('${esc(l.id)}')">Save</button></td>
+    </tr>`).join("") : '<tr><td colspan="7">अभी कोई Lead नहीं है।</td></tr>';
+  }
+  if($("nLeads")) $("nLeads").textContent=leads.filter(l=>l.status==="New").length;
+}
+
+window.updateLeadStatus=async function(id){
+  if(!window.isPlatformAdmin){ alert("केवल Super Admin अनुमति है।"); return; }
+  const select=$("lead-status-"+id);
+  if(!select) return;
+  const {error}=await client.from("lead_enquiries").update({status:select.value}).eq("id",id);
+  if(error){ alert("Status अपडेट नहीं हुआ: "+error.message); return; }
+  await loadLeads();
+};
+
+$("leadForm").onsubmit=async e=>{
+  e.preventDefault();
+  const msg=$("leadMsg");
+  msg.textContent="Enquiry सेव हो रही है...";
+  const payload={
+    lab_name:$("lLabName").value.trim(),
+    owner_name:$("lOwnerName").value.trim(),
+    mobile:$("lMobile").value.trim(),
+    email:$("lEmail").value.trim() || null,
+    city:$("lCity").value.trim(),
+    state:$("lState").value.trim(),
+    address:$("lAddress").value.trim() || null,
+    message:$("lMessage").value.trim() || null
+  };
+  try{
+    const {error}=await client.from("lead_enquiries").insert(payload);
+    if(error) throw error;
+    msg.innerHTML='<div class="success">Enquiry Supabase Database में सफलतापूर्वक सेव हुई।</div>';
+    e.target.reset();
+    await loadLeads();
+  }catch(err){
+    msg.innerHTML='<div class="danger">Enquiry सेव नहीं हुई: '+esc(err.message)+'</div>';
+  }
+};
+
+$("refreshLeads")?.addEventListener("click",loadLeads);
+
+/* LAB PROFILE - DEMO */
+
+$("labForm").onsubmit=e=>{
+
+e.preventDefault();
+
+$("labMsg").innerHTML=
+'<div class="success">प्रोफाइल विवरण दर्ज हुआ। स्थायी सेविंग अभी नहीं जुड़ी है।</div>';
+
+};
+
+/* LOGOUT */
+
+$("logoutBtn").onclick=async()=>{
+
+await client.auth.signOut();
+
+window.currentLabId=null;
+window.currentLabRole=null;
+window.isPlatformAdmin=false;
+["saLabsCount","saActiveLabs","saTrialLabs","saMembersCount","saLeadsCount"].forEach(id=>{if($(id)) $(id).textContent="—";});
+if($("saLabsRows")) $("saLabsRows").innerHTML='<tr><td colspan="7">Login आवश्यक है।</td></tr>';
+if($("saMembersRows")) $("saMembersRows").innerHTML='<tr><td colspan="4">Login आवश्यक है।</td></tr>';
+
+patients=[];
+orders=[];
+orderItems=[];
+bills=[];
+tests=[];
+testPrices={};
+
+showLogin();
+
+$("login-message").textContent="Logout सफल।";
+
+};
+
+/* PASSWORD RECOVERY */
+
+client.auth.onAuthStateChange((event,session)=>{
+
+if(event==="PASSWORD_RECOVERY" && session){
+$("password-reset-box").style.display="block";
+}
+
+});
+
+client.auth.getSession().then(({data,error})=>{
+
+if(!error && data.session && location.hash.includes("type=recovery")){
+$("password-reset-box").style.display="block";
+}
+
+});
+
+$("reset-form").onsubmit=async e=>{
+
+e.preventDefault();
+
+const password=$("new-password").value;
+const confirm=$("confirm-password").value;
+const msg=$("reset-message");
+
+if(password!==confirm){
+msg.textContent="दोनों Password एक जैसे होने चाहिए।";
+return;
+}
+
+const {error}=await client.auth.updateUser({
+password:password
+});
+
+if(error){
+msg.textContent=error.message;
+}else{
+msg.textContent="Password सफलतापूर्वक बदल गया।";
+}
+
+};
+
+/* AUTO RESTORE LOGIN SESSION */
+
+(async()=>{
+
+const {data,error}=await client.auth.getSession();
+
+if(error || !data.session) return;
+
+try{
+
+await initializeApp();
+
+}catch(err){
+
+showLogin();
+$("login-message").textContent="Session Error: "+err.message;
+
+}
+
+})();
+
+</script>
+</body>
+</html>
